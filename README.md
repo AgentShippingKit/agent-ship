@@ -297,8 +297,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Opik** for observability
 - **Heroku** for deployment
 - **PostgreSQL** for data persistence
-- **[MichaelisTrofficus](https://github.com/MichaelisTrofficus)** for inspiration
-- **[iusztinpaul](https://github.com/iusztinpaul)** for inspiration
+
+## Inspirations
+- **[arpitbbhayani](https://github.com/arpitbbhayani)** : Inspiring me to use first principles
+- **[MichaelisTrofficus](https://github.com/MichaelisTrofficus)** : For sharing insights on their cookie cutter for Langgraph agents
+- **[iusztinpaul](https://github.com/iusztinpaul)** : For sharing insights on their cookie cutter for Langgraph agents
+
 
 **Built with ❤️ for the AI community**
 
