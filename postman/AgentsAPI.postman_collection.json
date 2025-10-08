@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "Ship AI Agents API",
+    "description": "Complete API collection for testing Ship AI Agents service with organized agent folders",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "d3b1a3d4-8e7f-4b06-9a66-aaaa00000001"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "user-123",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "session-456",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Root Endpoint",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "API Documentation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/docs",
+          "host": ["{{base_url}}"],
+          "path": ["docs"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Trip Planner Agent",
+      "item": [
+        {
+          "name": "Plan Trip - New York to Paris",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"trip_planner\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": {\n    \"source\": \"New York\",\n    \"destination\": \"Paris\"\n  },\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Plan Trip - London to Tokyo",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"trip_planner\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": {\n    \"source\": \"London\",\n    \"destination\": \"Tokyo\"\n  },\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Translation Agent",
+      "item": [
+        {
+          "name": "Translate English to Spanish",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"translation\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": {\n    \"text\": \"Hello, how are you?\",\n    \"from_language\": \"en\",\n    \"to_language\": \"es\"\n  },\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Translate French to English",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"translation\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": {\n    \"text\": \"Bonjour, comment allez-vous?\",\n    \"from_language\": \"fr\",\n    \"to_language\": \"en\"\n  },\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Flight Agent",
+      "item": [
+        {
+          "name": "Search Flights - NYC to LAX",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"flight\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Find flights from New York to Los Angeles for next week\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hotel Agent",
+      "item": [
+        {
+          "name": "Search Hotels - Paris",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"hotel\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Find hotels in Paris for 3 nights in December\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Summary Agent",
+      "item": [
+        {
+          "name": "Summarize Trip Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"summary\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Summarize the trip plan for New York to Paris\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Database Agent",
+      "item": [
+        {
+          "name": "List Tables",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"What tables are available in the database?\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Table Schema - Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Show me the schema for the users table\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Query Table - Products",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Show me 5 records from the products table\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Records - Find User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Find users with email 'john@example.com'\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Table Statistics - Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"What are the statistics for the orders table?\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complex Query - Product Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Show me all electronics products and their details\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Tests",
+      "item": [
+        {
+          "name": "Invalid Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"invalid_agent\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Test message\",\n  \"features\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agents/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "agents", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agent_name\": \"database\",\n  \"user_id\": \"{{user_id}}\",\n  \"session_id\": \"{{session_id}}\",\n  \"sender\": \"USER\",\n  \"query\": \"Test message\",\n  \"features\": []\n  // Invalid JSON comment\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+google-adk = ">=1.14.1"
+litellm = ">=1.77.1"
+fastapi = ">=0.116.2"
+uvicorn = ">=0.36.0"
+pydantic = ">=2.11.9"
+pydantic-settings = ">=2.10.1"
+python-dotenv = "*"
+pyyaml = "*"
+requests = "*"
+aiohttp = "*"
+httpx = "*"
+click = "*"
+typing-extensions = "*"
+colorlog = "*"
+python-json-logger = "*"
+gunicorn = "*"
+psycopg2-binary = "*"
+psycopg2 = "*"
+opik = "==1.8.63"
+
+[dev-packages]
+pytest = "*"
+pytest-asyncio = "*"
+black = "*"
+flake8 = "*"
+mypy = "*"
+
+[requires]
+python_version = "3.13"
