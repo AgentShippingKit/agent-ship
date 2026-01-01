@@ -105,6 +105,7 @@ while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
         echo "📚 Documentation:"
         echo -e "   API Docs (Swagger): ${CYAN}http://localhost:7001/swagger${NC}"
         echo -e "   Framework Docs:     ${CYAN}http://localhost:7001/docs${NC}"
+        echo -e "   Debug UI:           ${CYAN}http://localhost:7001/debug-ui${NC}"
         echo ""
         exit 0
     fi
@@ -118,3 +119,4 @@ print_warning "Service is starting (may take a bit longer)"
 echo -e "Check status: ${CYAN}make docker-logs${NC}"
 echo -e "API Docs: ${CYAN}http://localhost:7001/swagger${NC}"
 echo -e "Framework Docs: ${CYAN}http://localhost:7001/docs${NC}"
+echo -e "Debug UI: ${CYAN}http://localhost:7001/debug-ui${NC}"
