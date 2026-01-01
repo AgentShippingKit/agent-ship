@@ -41,16 +41,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
+# Copy installed packages from builder (includes pipenv and all dependencies)
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
-COPY . .
+# Create non-root user for security (before copying files)
+RUN useradd --create-home --shell /bin/bash app
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+# Copy application code (excludes files in .dockerignore)
+COPY --chown=app:app . .
+
+# Explicitly ensure branding folder is copied (must be after COPY . .)
+# This ensures branding assets are available even if .dockerignore affects it
+COPY --chown=app:app branding/ /app/branding/
+
+# Build Sphinx documentation (if source exists)
+# This ensures /docs endpoint serves the built documentation
+# Note: All Python packages (including sphinx) are already installed from builder stage
+RUN if [ -d "docs_sphinx/source" ]; then \
+        cd docs_sphinx && \
+        python -m sphinx -b html source build/html || echo "Warning: Sphinx build failed, /docs will show fallback page"; \
+    fi
+
+# Ensure app user owns /app directory and can write to it
+RUN chown -R app:app /app && chmod -R u+w /app
+
 USER app
 
 # Expose port

@@ -5,12 +5,12 @@ help: ## Show this help message
 	@echo ""
 	@echo "🐳 Docker (Local Development):"
 	@echo "  make docker-setup     - First-time setup (builds + starts)"
-	@echo "  make docker-up        - Start containers (with hot-reload)"
+	@echo "  make docker-up        - Start everything (API, Swagger, Docs at :7001)"
 	@echo "  make docker-down      - Stop containers"
-	@echo "  make docker-restart   - Restart containers"
-	@echo "  make docker-reload    - Hard reload (down + up, reloads env vars)"
+	@echo "  make docker-restart   - Restart containers (quick restart)"
+	@echo "  make docker-reload    - Hard reload (rebuilds image + restarts)"
 	@echo "  make docker-logs      - View Docker logs"
-	@echo "  make docker-build     - Rebuild Docker images"
+	@echo "  make docker-build     - Rebuild Docker images only"
 	@echo ""
 	@echo "☁️  Deployment:"
 	@echo "  make heroku-deploy     - Deploy to Heroku (one command, includes PostgreSQL)"
@@ -31,9 +31,9 @@ help: ## Show this help message
 	@echo "  make type-check   - Run type checking with mypy"
 	@echo ""
 	@echo "Documentation:"
-	@echo "  make docs-serve   - Serve documentation locally (http://localhost:8000)"
-	@echo "  make docs-build   - Build documentation site"
-	@echo "  make docs-deploy  - Deploy documentation to GitHub Pages"
+	@echo "  make docs-serve      - Build docs and serve at http://localhost:7001/docs"
+	@echo "  make docs-build      - Build Sphinx documentation (single source of truth)"
+	@echo "  Note: All docs (API + user guides) available at http://localhost:7001/docs"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean        - Clean temporary files and caches"
@@ -44,18 +44,30 @@ docker-setup: ## One-command Docker setup (recommended)
 	@chmod +x scripts/setup/docker-setup.sh
 	@./scripts/setup/docker-setup.sh
 
-docker-up: ## Start Docker containers (with hot-reload)
-	@docker compose up -d || docker-compose up -d
+docker-up: ## Start Docker containers (API, Swagger, Docs - everything at :7001)
+	@echo "🚀 Starting AgentShip (API, Swagger, Docs)..."
+	@echo "📦 Building Docker image (includes docs build)..."
+	@echo "📚 Available at: http://localhost:7001"
+	@echo "   - API: http://localhost:7001"
+	@echo "   - Swagger: http://localhost:7001/swagger"
+	@echo "   - Docs: http://localhost:7001/docs (Sphinx docs built automatically)"
+	@echo "   - Debug UI: http://localhost:7001/debug-ui"
+	@docker compose up -d --build || docker-compose up -d --build
 
 docker-down: ## Stop Docker containers
+	@echo "🛑 Stopping AgentShip containers..."
 	@docker compose down || docker-compose down
 
-docker-restart: ## Restart Docker containers
+docker-restart: ## Restart Docker containers (keeps everything running)
+	@echo "🔄 Restarting AgentShip containers..."
 	@docker compose restart || docker-compose restart
 
-docker-reload: ## Hard reload containers (down + up, reloads environment variables)
-	@echo "🔄 Hard reloading Docker containers..."
-	@docker compose down && docker compose up -d || docker-compose down && docker-compose up -d
+docker-reload: ## Hard reload (rebuilds image with docs, restarts everything)
+	@echo "🔄 Hard reloading AgentShip (rebuilding image + docs, restarting containers)..."
+	@echo "📚 Everything will be available at http://localhost:7001 after restart"
+	@docker compose down || docker-compose down
+	@docker compose build || docker-compose build
+	@docker compose up -d || docker-compose up -d
 
 docker-logs: ## View Docker logs
 	@docker compose logs -f || docker-compose logs -f
@@ -129,10 +141,14 @@ clean: ## Clean temporary files and caches
 	find . -type f -name ".coverage" -delete 2>/dev/null || true
 	@echo "✅ Clean complete"
 
-docs-serve: ## Serve Sphinx documentation locally
-	cd docs_sphinx && pipenv run sphinx-autobuild source build/html --host 0.0.0.0 --port 8000
+docs-serve: docs-build ## Build and serve documentation at http://localhost:7001/docs
+	@echo "📚 Building Sphinx documentation..."
+	@echo "🚀 Starting AgentShip server with documentation at http://localhost:7001/docs"
+	@echo "🔄 Server will auto-reload on code changes"
+	@echo ""
+	pipenv run uvicorn src.service.main:app --reload --host 0.0.0.0 --port 7001
 
-docs-build: ## Build Sphinx documentation
+docs-build: ## Build Sphinx documentation (single source of truth - API + user guides)
 	cd docs_sphinx && pipenv run sphinx-build -b html source build/html
 
 docs-html: docs-build ## Alias for docs-build

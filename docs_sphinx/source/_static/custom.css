@@ -1,0 +1,23 @@
+/* Hide right sidebar (table of contents) - navigation only via left sidebar */
+input[name="__toc"],
+label[for="__toc"],
+label.toc-overlay,
+.overlay.toc-overlay,
+.toc-overlay-icon,
+.toc-header-icon,
+.toc-drawer,
+aside.toc-drawer {
+    display: none !important;
+}
+
+/* Adjust main content area to use full width when TOC is hidden */
+.furo-main-content {
+    margin-right: 0 !important;
+    max-width: 100% !important;
+}
+
+/* Ensure content takes full available width */
+article {
+    max-width: 100% !important;
+}
+

@@ -26,6 +26,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',  # Google/NumPy style docstrings
     'sphinx_autodoc_typehints',  # Type hints in docs
+    'myst_parser',  # Markdown support (for user guides from docs/)
 ]
 
 # Add napoleon extension (it's built-in but needs to be imported)
@@ -37,6 +38,12 @@ except ImportError:
 templates_path = ['_templates']
 exclude_patterns = []
 
+# Support both RST and Markdown files
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
 language = 'en'
 
 # -- Options for HTML output -------------------------------------------------
@@ -45,6 +52,37 @@ language = 'en'
 # Use furo theme (modern, compatible with Sphinx 9+)
 html_theme = 'furo'
 html_static_path = ['_static']
+
+# Branding
+html_logo = '_static/logo-icon.svg'
+html_favicon = '_static/favicon-32.svg'
+
+# Custom CSS to hide right sidebar
+html_css_files = ['custom.css']
+
+# Sidebar configuration - ensure consistent navigation across all pages
+# This forces the master toctree from index.rst to always be shown
+# Right sidebar (table of contents) is disabled - navigation only via left sidebar
+html_sidebars = {
+    '**': [
+        'sidebar/scroll-start.html',
+        'sidebar/brand.html',
+        'sidebar/search.html',
+        'sidebar/navigation.html',  # Shows master toctree from index.rst
+        'sidebar/ethical-ads.html',
+        'sidebar/scroll-end.html',
+    ]
+}
+
+# Disable right sidebar (table of contents) - navigation only via left sidebar
+html_theme_options = {
+    'sidebar_hide_name': False,
+    'navigation_with_keys': True,
+    'announcements': {},
+    'top_of_page_button': 'edit',
+    'show_navbar_depth': 1,
+    'toc_title': None,  # Hide TOC title
+}
 
 # -- Autodoc configuration ---------------------------------------------------
 autodoc_default_options = {

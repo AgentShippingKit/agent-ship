@@ -29,7 +29,15 @@ Main Endpoints
 Core Modules
 ------------
 
+The following pages document the core API components:
+
+- :doc:`base-agent` - Base agent class
+- :doc:`agent-config` - Agent configuration  
+- :doc:`models` - Data models
+- :doc:`modules` - Supporting modules
+
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
    base-agent

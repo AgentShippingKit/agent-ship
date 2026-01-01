@@ -76,4 +76,5 @@ sphinx = "*"
 furo = "*"
 sphinx-autodoc-typehints = "*"
 sphinx-autobuild = "*"
+myst-parser = "*"  # Markdown support for Sphinx
 memory-profiler = "*"

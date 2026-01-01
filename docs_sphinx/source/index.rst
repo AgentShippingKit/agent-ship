@@ -1,5 +1,11 @@
 .. AgentShip documentation master file
 
+.. raw:: html
+
+   <div style="text-align: center; margin: 2rem 0;">
+       <img src="/docs/_static/docs-header.svg" alt="AgentShip Documentation" style="width: 100%; max-width: 960px;" />
+   </div>
+
 Welcome to AgentShip's documentation!
 =====================================
 
@@ -44,11 +50,23 @@ The setup script will:
    :caption: Contents:
 
    why-agentship
-   getting-started
+   user-guides/getting-started/quickstart
+   user-guides/getting-started/installation
+   user-guides/getting-started/configuration
+   user-guides/docker-setup
+   user-guides/building-agents/patterns/orchestrator
+   user-guides/building-agents/patterns/single-agent
+   user-guides/building-agents/patterns/tool-pattern
+   user-guides/building-agents/tools
+   user-guides/building-agents/agent-configuration
    api/index
+   api/base-agent
+   api/agent-config
+   api/models
+   api/modules
+   user-guides/deployment/heroku
+   user-guides/testing/writing-tests
    testing-with-postman
-   building-agents
-   deployment
    contributing
 
 Key Concepts

@@ -1,0 +1,26 @@
+{# Disable right sidebar (table of contents) #}
+{% extends "!page.html" %}
+
+{% block body %}
+  {{ super() }}
+  <script>
+    // Hide the right sidebar (table of contents) toggle
+    document.addEventListener('DOMContentLoaded', function() {
+      const tocToggle = document.querySelector('input[name="__toc"]');
+      if (tocToggle) {
+        tocToggle.checked = false;
+        tocToggle.disabled = true;
+        const tocOverlay = document.querySelector('label[for="__toc"]');
+        if (tocOverlay) {
+          tocOverlay.style.display = 'none';
+        }
+      }
+      // Hide the TOC sidebar
+      const tocSidebar = document.querySelector('.toc-drawer');
+      if (tocSidebar) {
+        tocSidebar.style.display = 'none';
+      }
+    });
+  </script>
+{% endblock %}
+

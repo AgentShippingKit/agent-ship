@@ -54,9 +54,9 @@ htmlcov/
 .tox/
 .hypothesis/
 
-# MkDocs
-site/
-.cache/
+# MkDocs (removed - using Sphinx only)
+# site/
+# .cache/
 
 # Sphinx
 docs_sphinx/build/

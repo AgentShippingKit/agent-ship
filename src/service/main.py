@@ -16,6 +16,13 @@ load_dotenv()
 # logger
 logger = logging.getLogger(__name__)
 
+# Get project root for static files (needed early for favicon)
+# Use absolute path to ensure it works regardless of where the script is run from
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+# Mount branding assets EARLY (before FastAPI app creation to ensure images are available)
+branding_path = os.path.abspath(os.path.join(project_root, "branding"))
+
 app = FastAPI(
     title="AgentShip API",
     description="AgentShip - An Agent Shipping Kit. Production-ready AI Agent framework with multiple agent patterns and observability.",
@@ -28,10 +35,24 @@ app = FastAPI(
         "name": "MIT License",
         "url": "https://opensource.org/licenses/MIT",
     },
-    docs_url="/swagger",  # Swagger UI at /swagger (API reference)
-    redoc_url="/redoc",   # ReDoc at /redoc (alternative API docs)
+    docs_url="/swagger",  # Swagger UI at /swagger (keep for direct access)
+    redoc_url=None,  # Disable default /redoc (redirect to /docs)
     openapi_url="/openapi.json",  # OpenAPI JSON at /openapi.json
+    swagger_ui_parameters={
+        "faviconUrl": "/branding/favicon-32.svg",
+    },
 )
+
+# Add favicon route for Swagger/ReDoc (must be before other routes)
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon for Swagger UI and browser tabs."""
+    favicon_path = os.path.join(branding_path, "favicon-32.svg")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    # Fallback to 204 No Content if favicon not found
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 @app.get("/")
 async def read_root():
@@ -66,57 +87,86 @@ async def health_check():
         # psutil not installed, return basic status
         return {"status": "running"}
 
-# Serve Sphinx documentation at /docs (single source of truth)
-# If not built locally, show a helpful page with links
+# Serve unified documentation at /docs (single source of truth)
+# This serves Sphinx docs if built, otherwise shows a hub page with links
 docs_sphinx_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs_sphinx", "build", "html")
 if os.path.exists(docs_sphinx_path) and os.path.exists(os.path.join(docs_sphinx_path, "index.html")):
     # Mount static files for Sphinx site at /docs
     app.mount("/docs", StaticFiles(directory=docs_sphinx_path, html=True), name="docs")
 else:
-    # If docs not built, show a helpful page with links
+    # If docs not built, show a documentation hub page
     @app.get("/docs", response_class=HTMLResponse)
     @app.get("/docs/{path:path}", response_class=HTMLResponse)
     async def docs_info(path: str = ""):
-        """Show documentation links page."""
+        """Show documentation hub page with links to all documentation sources."""
         html_content = """
         <!DOCTYPE html>
         <html>
         <head>
             <title>AgentShip Documentation</title>
+            <link rel="icon" type="image/svg+xml" href="/branding/favicon-32.svg">
             <style>
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                       max-width: 800px; margin: 50px auto; padding: 20px; }
-                h1 { color: #333; }
-                .link { display: block; margin: 15px 0; padding: 15px; 
-                        background: #f5f5f5; border-radius: 5px; text-decoration: none; 
-                        color: #0066cc; }
-                .link:hover { background: #e0e0e0; }
-                .api-link { background: #e3f2fd; }
+                       max-width: 900px; margin: 50px auto; padding: 20px; 
+                       background: #fafafa; }
+                .container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #333; margin-bottom: 10px; }
+                .subtitle { color: #666; margin-bottom: 30px; }
+                .link { display: block; margin: 20px 0; padding: 20px; 
+                        background: #f5f5f5; border-radius: 8px; text-decoration: none; 
+                        color: #0066cc; border-left: 4px solid #0066cc; 
+                        transition: all 0.2s; }
+                .link:hover { background: #e3f2fd; transform: translateX(4px); }
+                .link strong { display: block; font-size: 1.1em; margin-bottom: 5px; }
+                .link small { color: #666; }
+                .primary { background: #e3f2fd; border-left-color: #1976d2; }
+                .note { margin-top: 30px; padding: 15px; background: #fff3cd; border-radius: 5px; color: #856404; }
             </style>
         </head>
         <body>
-            <h1>📚 AgentShip Documentation</h1>
-            <p>Choose your documentation source:</p>
-            <a href="/swagger" class="link api-link">
-                <strong>API Documentation (Swagger)</strong><br>
-                <small>Interactive API reference and testing</small>
-            </a>
-            <a href="/swagger" class="link">
-                <strong>API Reference (Sphinx)</strong><br>
-                <small>Auto-generated API documentation from code</small>
-            </a>
-            <a href="https://harshuljain13.github.io/ship-ai-agents/" class="link" target="_blank">
-                <strong>User Guides (GitHub Pages)</strong><br>
-                <small>Complete guides, tutorials, and examples</small>
-            </a>
-            <a href="/redoc" class="link">
-                <strong>ReDoc API Documentation</strong><br>
-                <small>Alternative API documentation format</small>
-            </a>
+            <div class="container">
+                <div style="text-align: center; margin: -40px -40px 30px -40px; padding: 20px 0; background: #F8FAFC; border-radius: 8px 8px 0 0;">
+                    <img src="/branding/docs-header.svg" alt="AgentShip Documentation" style="width: 100%; max-width: 960px; height: auto;" />
+                </div>
+                <h1>📚 AgentShip Documentation</h1>
+                <p class="subtitle">All documentation in one place</p>
+                
+                <a href="/swagger" class="link primary">
+                    <strong>🔧 Interactive API Documentation (Swagger)</strong>
+                    <small>Test API endpoints directly in your browser</small>
+                </a>
+                
+                <div class="note">
+                    <strong>Note:</strong> Full documentation (API reference + user guides) will be available here once built. 
+                    Run <code>make docs-build</code> to generate it.
+                </div>
+            </div>
         </body>
         </html>
         """
         return HTMLResponse(content=html_content)
+
+# Redirect /redoc to /docs for consistency
+@app.get("/redoc")
+async def redoc_redirect():
+    """Redirect ReDoc to unified /docs endpoint."""
+    return RedirectResponse(url="/docs", status_code=301)
+
+# Mount branding assets FIRST (before routers to ensure it takes precedence)
+if os.path.exists(branding_path):
+    try:
+        app.mount("/branding", StaticFiles(directory=branding_path), name="branding")
+        logger.info(f"🎨 Branding assets mounted at /branding from {branding_path}")
+        # Test that a file exists
+        test_file = os.path.join(branding_path, "logo-icon.svg")
+        if os.path.exists(test_file):
+            logger.info(f"✅ Test file exists: {test_file}")
+        else:
+            logger.warning(f"⚠️  Test file not found: {test_file}")
+    except Exception as e:
+        logger.error(f"❌ Failed to mount branding assets: {e}")
+else:
+    logger.warning(f"⚠️  Branding assets not found at {branding_path}")
 
 # Ensure agents are discovered (idempotent)
 # Uses AGENT_DIRECTORIES env var or defaults to framework agents only
@@ -127,17 +177,11 @@ app.include_router(rest_router)
 # Include Debug API router
 app.include_router(debug_router, prefix="/api/debug", tags=["debug"])
 
-# Mount branding assets
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-branding_path = os.path.join(project_root, "branding")
-if os.path.exists(branding_path):
-    app.mount("/branding", StaticFiles(directory=branding_path), name="branding")
-
 # Serve Debug UI static files
 debug_ui_enabled = os.environ.get("DEBUG_UI_ENABLED", "true").lower() == "true"
 if debug_ui_enabled:
-    # debug_ui/ is at project root level
-    static_path = os.path.join(project_root, "debug_ui", "static")
+    # debug_ui/ is at project root level - use absolute path
+    static_path = os.path.abspath(os.path.join(project_root, "debug_ui", "static"))
     if os.path.exists(static_path):
         # Serve static files for debug UI
         app.mount("/debug-ui/static", StaticFiles(directory=static_path), name="debug-static")
