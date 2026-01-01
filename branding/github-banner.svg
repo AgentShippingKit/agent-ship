@@ -89,24 +89,5 @@
     
   </g>
   
-  <!-- Bottom feature pills -->
-  <g transform="translate(640, 280)">
-    <g transform="translate(-280, 0)">
-      <rect x="-60" y="-14" width="120" height="28" rx="14" fill="#334155"/>
-      <text x="0" y="5" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#E2E8F0">🚀 FastAPI</text>
-    </g>
-    <g transform="translate(-120, 0)">
-      <rect x="-60" y="-14" width="120" height="28" rx="14" fill="#334155"/>
-      <text x="0" y="5" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#E2E8F0">⚛️ React</text>
-    </g>
-    <g transform="translate(40, 0)">
-      <rect x="-60" y="-14" width="120" height="28" rx="14" fill="#334155"/>
-      <text x="0" y="5" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#E2E8F0">🔍 Opik</text>
-    </g>
-    <g transform="translate(200, 0)">
-      <rect x="-70" y="-14" width="140" height="28" rx="14" fill="#334155"/>
-      <text x="0" y="5" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#E2E8F0">🤖 Google ADK</text>
-    </g>
-  </g>
   
 </svg>
