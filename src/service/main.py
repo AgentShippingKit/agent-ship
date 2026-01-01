@@ -127,11 +127,16 @@ app.include_router(rest_router)
 # Include Debug API router
 app.include_router(debug_router, prefix="/api/debug", tags=["debug"])
 
+# Mount branding assets
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+branding_path = os.path.join(project_root, "branding")
+if os.path.exists(branding_path):
+    app.mount("/branding", StaticFiles(directory=branding_path), name="branding")
+
 # Serve Debug UI static files
 debug_ui_enabled = os.environ.get("DEBUG_UI_ENABLED", "true").lower() == "true"
 if debug_ui_enabled:
     # debug_ui/ is at project root level
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     static_path = os.path.join(project_root, "debug_ui", "static")
     if os.path.exists(static_path):
         # Serve static files for debug UI
