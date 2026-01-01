@@ -1,4 +1,4 @@
-# Ship AI Agents - API Testing with Postman
+# AgentShip - API Testing with Postman
 
 This directory contains Postman collections and environments for testing the AI Agents API with organized agent folders.
 
@@ -16,6 +16,12 @@ The collection is organized into folders for better testing:
 - **Health Check** - Service status
 - **Root Endpoint** - Welcome message  
 - **API Documentation** - Swagger docs
+
+### 🏥 Medical Followup Agent
+- **Basic Chat - Chest Pain** - Simple medical case
+- **Simple Case - Headache** - Basic headache scenario
+- **Complex Case - Shortness of Breath** - Multi-turn conversation
+- **Emergency Case - Severe Chest Pain** - Critical medical scenario
 
 ### 🗺️ Trip Planner Agent
 - **Plan Trip - New York to Paris** - International trip planning
@@ -57,7 +63,7 @@ The collection is organized into folders for better testing:
 
 ### 2. Set Environment
 1. Click the environment dropdown (top right)
-2. Select "Ship AI Agents Environment"
+2. Select "AgentShip Environment"
 3. Verify variables are set correctly
 
 ### 3. Test API
@@ -70,12 +76,16 @@ The collection is organized into folders for better testing:
 ### Local Development
 - **Base URL**: `http://localhost:7001`
 - **Health Check**: `http://localhost:7001/health`
-- **API Docs**: `http://localhost:7001/docs`
+- **API Docs (Swagger)**: `http://localhost:7001/swagger`
+- **API Docs (ReDoc)**: `http://localhost:7001/redoc`
+- **Framework Docs**: `http://localhost:7001/docs` (after building with `mkdocs build`)
 
 ### Production
 - **Base URL**: `https://your-production-url.herokuapp.com` (replace with your actual production URL)
 - **Health Check**: `https://your-production-url.herokuapp.com/health`
-- **API Docs**: `https://your-production-url.herokuapp.com/docs`
+- **API Docs (Swagger)**: `https://your-production-url.herokuapp.com/swagger`
+- **API Docs (ReDoc)**: `https://your-production-url.herokuapp.com/redoc`
+- **Framework Docs**: `https://your-production-url.herokuapp.com/docs` (if deployed)
 
 ## 📋 Available Endpoints
 
@@ -92,8 +102,18 @@ The collection is organized into folders for better testing:
 ### Root
 - **GET** `/`
 - **Description**: Welcome message
-- **Response**: `{"message": "Welcome to the Ship AI Agents API!"}`
+- **Response**: `{"message": "Welcome to the AgentShip API!"}`
 
+## 🔧 Environment Variables
+
+### Base URLs
+- `base_url` - Local development URL
+- `base_url_production` - Production URL
+
+### Test Data
+- `user_id` - Test user ID (default: "user-123")
+- `session_id` - Test session ID (default: "session-456")
+- `agent_name` - Agent to test (default: "medical_followup")
 
 ## 📝 Sample Requests
 
@@ -102,11 +122,39 @@ The collection is organized into folders for better testing:
 GET {{base_url}}/health
 ```
 
+### Agent Chat - Medical Followup
+```json
+{
+  "agent_name": "medical_followup",
+  "user_id": "user-123",
+  "session_id": "session-456",
+  "query": [
+    {
+      "speaker": "Patient",
+      "text": "I have chest pain"
+    },
+    {
+      "speaker": "Doctor", 
+      "text": "Can you describe it?"
+    },
+    {
+      "speaker": "Patient",
+      "text": "It's a sharp, stabbing pain that started after lifting heavy boxes"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "max_followups",
+      "feature_value": 5
+    }
+  ]
+}
+```
 
 ### Agent Chat - Trip Planner Agent
 ```json
 {
-  "agent_name": "trip_planner",
+  "agent_name": "trip_planner_agent",
   "user_id": "user-123",
   "session_id": "session-456",
   "query": {
@@ -120,7 +168,7 @@ GET {{base_url}}/health
 ### Agent Chat - Translation Agent
 ```json
 {
-  "agent_name": "translation",
+  "agent_name": "translation_agent",
   "user_id": "user-123",
   "session_id": "session-456",
   "query": {
@@ -160,6 +208,10 @@ GET {{base_url}}/health
 - Test if service is running
 - Should return `{"status": "running"}`
 
+### 2. Medical Followup Agent
+- **New Session**: Use a new session_id, should create new session and return followup questions
+- **Existing Session**: Use same session_id, should continue conversation
+- **Different Cases**: Test various medical scenarios (chest pain, headache, emergency)
 
 ### 3. Trip Planner Agent
 - **Trip Planning**: Test with different source and destination pairs
@@ -231,6 +283,24 @@ GET {{base_url}}/health
 }
 ```
 
+### Successful Medical Followup Agent Chat
+```json
+{
+  "agent_name": "medical_followup",
+  "user_id": "user-123",
+  "session_id": "session-456",
+  "sender": "SYSTEM",
+  "success": true,
+  "agent_response": {
+    "followup_questions": [
+      "Have you experienced any shortness of breath?",
+      "Did the pain radiate to your arm or jaw?",
+      "Are you experiencing any nausea or sweating?"
+    ],
+    "count": 3
+  }
+}
+```
 
 ### Successful Database Agent Chat
 ```json
@@ -241,6 +311,13 @@ GET {{base_url}}/health
   "sender": "SYSTEM",
   "success": true,
   "agent_response": "Based on the database query, here are the available tables:\n\n1. **users** - Contains user information (id, name, email, age)\n2. **products** - Contains product catalog (id, name, price, category)\n3. **orders** - Contains order information (id, user_id, product_id, quantity, total)\n\nEach table has sample data that you can query. Would you like me to show you the schema or data from any specific table?"
+}
+```
+
+### Error Response
+```json
+{
+  "detail": "Agent 'invalid_agent' not found. Available agents: ['medical_followup_agent']"
 }
 ```
 
@@ -259,6 +336,6 @@ GET {{base_url}}/health
 ## 📚 Related Documentation
 
 - [Main README](../README.md) - High-level architecture
-- [Local Development](../LOCAL_DEVELOPMENT.md) - Local setup guide
+- [Installation Guide](../docs/getting-started/installation.md) - Local setup guide
 - [Heroku Deployment](../service_cloud_deploy/heroku/README.md) - Production deployment
 - [Database Setup](../agent_store_deploy/README.md) - Database configuration

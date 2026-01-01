@@ -2,9 +2,12 @@ import os
 from typing import List
 from enum import Enum
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
 
+
+logger = logging.getLogger(__name__)
 class LLMProviderName(Enum):
     """Name of the LLM provider."""
     OPENAI = "openai"

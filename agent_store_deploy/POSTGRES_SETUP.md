@@ -11,7 +11,7 @@ The AI Agents platform now supports PostgreSQL for persistent session storage. T
 - `setup_local_postgres.sh` - Local PostgreSQL setup script
 - `verify_db_setup.py` - Database verification script
 - `env.example` - Updated with SESSION_STORE_URI
-- `requirements.txt` - Added psycopg2-binary dependency
+- `Pipfile` - Added psycopg2-binary dependency
 - `pyproject.toml` - Added psycopg2-binary dependency
 - `service_cloud_deploy/heroku/deploy_heroku.sh` - Updated to include PostgreSQL addon
 

@@ -1,0 +1,71 @@
+version: '3.8'
+
+# Docker Compose for testing memory optimizations
+# Limits memory to 512MB (same as Heroku eco dyno) to verify optimizations
+
+services:
+  # Test service with memory limits
+  agentship-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentship-test
+    command: ["uvicorn", "src.service.main:app", "--host", "0.0.0.0", "--port", "7001"]
+    ports:
+      - "7001:7001"
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=test
+      - LOG_LEVEL=INFO
+      - AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store
+    # Memory limit matching Heroku eco dyno (512MB)
+    mem_limit: 512m
+    mem_reservation: 256m
+    # CPU limit
+    cpus: '0.5'
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - agentship-network
+
+  # PostgreSQL for testing
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentship-test-postgres
+    environment:
+      POSTGRES_DB: ai_agents_store
+      POSTGRES_USER: ai_agents_user
+      POSTGRES_PASSWORD: ai_agents_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_agents_user -d ai_agents_store"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: "no"
+    networks:
+      - agentship-network
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  agentship-network:
+    driver: bridge
+

@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # AgentShip API Service
+  agentship:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentship-api
+    command: ["uvicorn", "src.service.main:app", "--host", "0.0.0.0", "--port", "7001", "--reload"]
+    ports:
+      - "7001:7001"
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=docker
+      - LOG_LEVEL=INFO
+      # Override localhost -> postgres for Docker networking
+      - AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store
+      # Backend API runs on host machine (localhost:5001), use host.docker.internal to reach it from container
+      - BACKEND_URL=http://host.docker.internal:5001
+    volumes:
+      # Mount source code for development (hot-reload)
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./debug_ui:/app/debug_ui
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agentship-network
+    # Enable host.docker.internal for Linux (already works on Docker Desktop Mac/Windows)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # PostgreSQL Database for Session Storage
+  # Note: Debug UI is now mounted at /debug-ui on the main agentship service
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentship-postgres
+    environment:
+      POSTGRES_DB: ai_agents_store
+      POSTGRES_USER: ai_agents_user
+      POSTGRES_PASSWORD: ai_agents_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_agents_user -d ai_agents_store"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - agentship-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  agentship-network:
+    driver: bridge
+

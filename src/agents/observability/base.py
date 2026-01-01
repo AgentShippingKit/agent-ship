@@ -6,7 +6,7 @@ from google.adk.models import LlmRequest
 
 logger = logging.getLogger(__name__)
 
-class BaseObservaber(abc.ABC):
+class BaseObserver(abc.ABC):
     """Base class for all observability."""
 
     def __init__(self, agent_config: AgentConfig):

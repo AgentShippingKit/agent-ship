@@ -16,13 +16,19 @@ class FeatureMap(BaseModel):
     feature_name: str = Field(description="Feature name")
     feature_value: Any = Field(description="Feature value")
 
+class Artifact(BaseModel):
+    """Artifact for the agent."""
+    artifact_name: str = Field(description="Artifact name")
+    artifact_path: str = Field(description="Artifact path")
+
 class AgentChatRequest(BaseModel):
     agent_name: str
     user_id: str = None
     session_id: str = None
     sender: str = Field(description="Sender", default="USER")
     query: Any = Field(description="Query")
-    features: Optional[List[FeatureMap]] = Field(description="List of features")
+    features: Optional[List[FeatureMap]] = Field(description="List of features", default=[])
+    artifacts: Optional[List[Artifact]] = Field(description="List of artifacts", default=[])
 
 class AgentChatResponse(BaseModel):
     agent_name: str

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Ship AI Agents - Heroku PostgreSQL Storage Setup Script
+# AgentShip - Heroku PostgreSQL Storage Setup Script
 # This script sets up PostgreSQL storage for AI Agents on Heroku
 
 set -e  # Exit on any error

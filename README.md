@@ -1,309 +1,153 @@
-# 🚀 Ship AI Agents: Production-Ready Framework
+# AgentShip
 
-A complete cookie-cutter template for building, deploying, and operating AI agents using Google ADK. **Fork → Deploy → Ship in minutes.**
+**Build and deploy AI agents in minutes, not weeks.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Google ADK](https://img.shields.io/badge/Google-ADK-blue)](https://google.github.io/adk-docs/)
+AgentShip is the **production layer** for AI agents. Built on Google ADK, it provides everything you need to ship agents to production: REST API, session management, observability, and one-command deployment.
 
-## ✨ What You Get Out of the Box
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)]
 
-### 🤖 **Multi-Agent Patterns**
-- **Orchestrator Pattern**: Coordinate multiple sub-agents (trip planner with flight, hotel, summary agents)
-- **Single Agent Pattern**: Standalone agents (translation)
-- **Tool Pattern**: Database agents with comprehensive tooling
-- **YAML + Python Configs**: Easy customization and deployment
-
-### ⚡ **Production-Ready Backend**
-- **FastAPI**: REST APIs with streaming, WebSocket support
-- **Google ADK Framework**: Multi-LLM provider support (Gemini, OpenAI, Claude)
-- **Security Guardrails**: PII protection, input/output processing
-- **Observability**: Native Opik integration for tracing and metrics
-
-### 🎨 **API-First Design**
-- **REST APIs**: Comprehensive HTTP endpoints
-- **WebSocket Support**: Real-time communication ready
-- **Streaming APIs**: Large response handling
-- **OpenAPI Documentation**: Auto-generated API docs
-
-### 🧠 **Memory Management**
-- **Short-term**: PostgreSQL for session management
-- **Long-term**: OpenSearch for RAG capabilities
-- **File Storage**: S3 integration for document handling
-- **Agent Caching**: DiceDB for high-performance agent state and session caching
+---
 
 ## 🚀 Quick Start
 
-### 1. Environment Setup
+### First Time Setup
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ship-ai-agents.git
-cd ship-ai-agents
-
-# Install dependencies
-pipenv install
-
-# Set up environment variables
-cp env.example .env
-# Edit .env with your API keys (see Environment Variables section)
+git clone https://github.com/harshuljain13/ship-ai-agents.git
+cd ship-ai-agents/ai/ai-ecosystem
+make docker-setup
 ```
 
-### 2. Database Setup
+**That's it!** The script will:
+- ✅ Check Docker installation
+- ✅ Create `.env` file
+- ✅ Prompt for your API key
+- ✅ Start everything
+
+**Access your services:**
+- 🔌 **API**: http://localhost:7001/swagger
+- 🔧 **Debug UI**: http://localhost:7001/debug-ui
+
+### Next Time (After First Setup)
 ```bash
-# Set up PostgreSQL (see Database Setup guide)
-cd agent_store_deploy
-./setup_local_postgres.sh  # For local development
-# OR
-./setup_heroku_postgres.sh # For production
+make docker-up      # Start containers (with hot-reload)
+make docker-down    # Stop containers
+make docker-logs    # View logs
 ```
 
-### 3. Start Development
-```bash
-# Start the FastAPI backend
-pipenv run uvicorn src.service.main:app --reload --port 7001
-```
+**Hot-reload enabled!** Edit code in `src/` and changes auto-reload.
 
-### 4. Deploy to Production
-```bash
-# Deploy to Heroku (see Heroku Deployment guide)
-cd service_cloud_deploy/heroku
-./deploy_heroku.sh
-```
+---
 
-### 4. Access Your Application
-- **API Documentation**: http://localhost:7001/docs
-- **Health Check**: http://localhost:7001/health
-- **Agents Chat**: http://localhost:7001/api/agents/chat
-
-## 📋 Environment Variables
-
-Create a `.env` file with the following variables:
+## 📝 Create Your First Agent
 
 ```bash
-# Required: At least one LLM provider
-GOOGLE_API_KEY=your_google_api_key
-OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
+# 1. Create directory
+mkdir -p src/agents/all_agents/my_agent
+cd src/agents/all_agents/my_agent
 
-# Database (set automatically by deployment scripts)
-SESSION_STORE_URI=postgresql://user:password@host:port/database
-
-# Optional
-LOG_LEVEL=INFO
-ENVIRONMENT=development
-```
-
-## 🏗️ Architecture Overview
-
-![AI Agents Architecture](AgenticAI.jpg)
-
-Our platform provides a complete AI agent ecosystem with:
-
-#### ✨ Features
-- **FastAPI Layer**: HTTP/chat, SSE/chat-streaming, WebSocket support with guardrails, observability, and PII security
-- **AI Backend**: Google ADK framework (only) with multiple LLM provider integration like Google Gemini, OpenAI Chatgpt, Claude etc.
-- **Memory Management**: Short/long-term memory with Postgres, RAG with Opensearch, and caching with DiceDB and flat file interaction with S3.
-- **Observability**: Native Opik integration for tracing and metric
-- **Operations**: Prompt versioning, evals, and evals tracing via Opik SDK integration
-- **Tools & MCP**: Comprehensive tool registry and Model Control Plane for agent capabilities
-
-## 🤖 Pre-Built Agents
-
-### Trip Planner Agent
-- **Purpose**: Complete trip planning with flight and hotel coordination
-- **Features**: Orchestrates flight, hotel, and summary agents
-- **Use Case**: Travel applications, booking platforms
-
-### Translation Agent
-- **Purpose**: Multi-language text translation
-- **Features**: Language detection, context preservation
-- **Use Case**: International applications, content localization
-
-### Database Agent
-- **Purpose**: Natural language database queries
-- **Features**: Schema exploration, data analysis, statistics
-- **Use Case**: Business intelligence, data exploration tools
-
-### Flight & Hotel Agents
-- **Purpose**: Specialized travel planning
-- **Features**: Route optimization, accommodation recommendations
-- **Use Case**: Travel booking, itinerary planning
-
-## 🛠️ Customization
-
-### Adding New Agents
-1. Create agent directory in `src/agents/all_agents/`
-2. Add YAML configuration file
-3. Implement agent logic in Python
-4. Register in agent registry
-
-### Example Agent Structure
-```
-src/agents/all_agents/your_agent/
-├── main_agent.py          # Agent implementation
-├── main_agent.yaml        # Configuration
-└── __init__.py           # Module initialization
-```
-
-### Environment Configuration
-```yaml
-# main_agent.yaml
-agent_name: your_agent
+# 2. Create main_agent.yaml
+cat > main_agent.yaml << EOF
+agent_name: my_agent
 llm_provider_name: openai
 llm_model: gpt-4o
 temperature: 0.4
-description: Your agent description
+description: My helpful assistant
 instruction_template: |
-  Your agent instructions here...
+  You are a helpful assistant that answers questions clearly.
+EOF
+
+# 3. Create main_agent.py
+cat > main_agent.py << EOF
+from src.agents.all_agents.base_agent import BaseAgent
+from src.models.base_models import TextInput, TextOutput
+from src.agents.utils.path_utils import resolve_config_path
+
+class MyAgent(BaseAgent):
+    def __init__(self):
+        super().__init__(
+            config_path=resolve_config_path(relative_to=__file__),
+            input_schema=TextInput,
+            output_schema=TextOutput
+        )
+EOF
 ```
 
-## 🚀 Deployment
+Restart server → Agent is automatically discovered!
 
-### Heroku (Backend)
+---
+
+## 🔧 Debug UI
+
+AgentShip includes a **Gradio-based Debug UI** for testing agents interactively:
+
+**Access**: http://localhost:7001/debug-ui (same port as API)
+
+Features:
+- 💬 Interactive chat with any registered agent
+- 📝 Dynamic input forms from Pydantic schemas
+- 🔍 Real-time debug logs
+- 🔄 Session management (new/clear conversations)
+
+---
+
+## 🛠️ Commands
+
+### Local Development (Docker) - Recommended
 ```bash
-# Deploy to Heroku
-./service_cloud_deploy/heroku/deploy_heroku.sh
+make docker-setup   # First-time setup (builds + starts)
+make docker-up      # Start containers (after first setup)
+make docker-down    # Stop containers
+make docker-restart # Restart containers
+make docker-logs    # View logs
 ```
 
+### Local Development (No Docker)
+```bash
+make dev            # Start dev server → http://localhost:7001
+                    # Debug UI at → http://localhost:7001/debug-ui
+```
 
-## 📊 Observability & Monitoring
+### Deploy to Heroku
+```bash
+make heroku-deploy  # Deploy to Heroku (one command)
+```
 
-### Opik Integration
-- **Tracing**: Request/response tracking
-- **Metrics**: Performance monitoring
-- **Evals**: Agent evaluation and testing
-- **Logging**: Structured logging with context
+### Other Commands
+```bash
+make help           # See all commands
+make test           # Run tests
+```
 
-### Health Checks
-- **Service Health**: `/health` endpoint
-- **Database Health**: Connection monitoring
-- **Agent Health**: Individual agent status
+---
 
-## 🔒 Security Features
+## 🗄️ Database Environments
 
-### Input/Output Processing
-- **PII Detection**: Automatic sensitive data identification
-- **Content Filtering**: Inappropriate content detection
-- **Rate Limiting**: API abuse prevention
-- **Authentication**: JWT-based security
+AgentShip uses PostgreSQL for session storage. Different environments use different databases:
 
-### Data Protection
-- **Encryption**: Data at rest and in transit
-- **Access Control**: Role-based permissions
-- **Audit Logging**: Complete activity tracking
+| Environment | Command | Database | Access |
+|---|---|---|---|
+| **Docker** | `make docker-up` | Docker PostgreSQL (`ai_agents_store`) | `postgres:5432` (inside containers) |
+| **Local** | `make dev` | Local PostgreSQL (`ai_agents_session_store`) | `localhost:5432` |
+| **Heroku** | Auto-provisioned | Heroku PostgreSQL | `DATABASE_URL` env var |
 
-## 🗺️ Roadmap
+**Note**: Docker and local development use separate databases. Data does not sync between them.
 
-### ✅ **Phase 1: Foundation (Completed)**
-- [x] **Multi-LLM Provider Support**: Google Gemini, OpenAI, Claude integration
-- [x] **Agent Patterns**: Orchestrator, single-agent, tool-based patterns
-- [x] **PostgreSQL Integration**: Short-term memory and session management
-- [x] **FastAPI Chat Interface**: REST APIs with comprehensive endpoints
-- [x] **Opik Observability**: Agent and tool monitoring, tracing, metrics
-- [x] **Security Guardrails**: PII protection, input/output processing
-- [x] **Postman Testing**: Complete API testing suite
-- [x] **Heroku Deployment**: Production-ready deployment scripts
+### Docker Networking
 
-### 🚧 **Phase 2: Enhanced Capabilities (In Progress)**
-- [ ] **Long-term Memory**: OpenSearch integration for RAG capabilities
-- [ ] **Agent Caching**: DiceDB integration for high-performance agent caching and session management
-- [ ] **Multi-modal Support**: Image, audio, and video processing capabilities for agents
-- [ ] **WebSocket APIs**: Real-time communication support
-- [ ] **Streaming APIs**: FastAPI streaming for large responses
-- [ ] **Prompt Management**: Opik-based prompt versioning and management
-- [ ] **Enhanced PII Security**: Advanced data protection mechanisms
-- [ ] **React Frontend**: Modern web interface with Vite + TypeScript
+Inside Docker, containers communicate via service names, not `localhost`:
+- ✅ `postgres:5432` - Correct (Docker service name)
+- ❌ `localhost:5432` - Wrong (refers to container's own network)
 
-### 🌐 **Phase 3: Multi-Cloud Deployment (Planned)**
-- [ ] **AWS Deployment**: ECS, Lambda, RDS integration
-- [ ] **Google Cloud**: Cloud Run, Cloud SQL, Vertex AI integration
-- [ ] **Azure Deployment**: Container Instances, Azure SQL, Azure AI
-- [ ] **Kubernetes Support**: Helm charts and K8s manifests
-- [ ] **CI/CD Pipelines**: GitHub Actions, GitLab CI, Jenkins
+The `docker-compose.yml` automatically overrides the database URL for Docker networking.
 
-### 🔮 **Phase 4: Advanced Features (Future)**
-- [ ] **Multi-Agent Orchestration**: Complex workflow management
-- [ ] **Agent Marketplace**: Community agent sharing
-- [ ] **Visual Agent Builder**: No-code agent creation
-- [ ] **Enterprise Features**: SSO, RBAC, audit logs
-- [ ] **Mobile SDKs**: iOS and Android agent integration
+---
 
 ## 📚 Documentation
 
-### Setup Guides
-- **[Local Development](LOCAL_DEVELOPMENT.md)** - Complete local setup
-- **[Heroku Deployment](service_cloud_deploy/heroku/README.md)** - Production deployment
-- **[Database Setup](agent_store_deploy/README.md)** - PostgreSQL configuration
-- **[API Testing](postman/README.md)** - Postman collection guide
+- [Quick Start](docs/getting-started/quickstart.md) - Detailed guide
+- [Building Agents](docs/building-agents/overview.md) - Agent patterns
+- [Full Docs](docs/index.md) - Everything
 
-### API Documentation
-- **Swagger UI**: `/docs` endpoint
-- **ReDoc**: `/redoc` endpoint
-- **OpenAPI Spec**: Available at `/openapi.json`
+---
 
-## 🧪 Testing
-
-### Postman Collection
-Complete API testing suite with:
-- Health checks
-- Agent testing scenarios
-- Error handling tests
-- Performance tests
-
-### Agent Testing
-```bash
-# Test trip planner agent
-curl -X POST "http://localhost:7001/api/agents/chat" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "trip_planner_agent",
-    "user_id": "test-user",
-    "session_id": "test-session",
-    "query": {
-      "source": "New York",
-      "destination": "Paris"
-    }
-  }'
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Setup
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### MIT License Summary
-- ✅ **Commercial Use**: Use in commercial projects
-- ✅ **Modification**: Modify and distribute
-- ✅ **Distribution**: Share and redistribute
-- ✅ **Private Use**: Use in private projects
-- ❌ **Liability**: No warranty provided
-- ❌ **Warranty**: No warranty provided
-
-## 🙏 Acknowledgments
-
-- **Google ADK** for the agent framework
-- **FastAPI** for the web framework
-- **Opik** for observability
-- **Heroku** for deployment
-- **PostgreSQL** for data persistence
-
-## Inspirations
-- **[arpitbbhayani](https://github.com/arpitbbhayani)** : Inspiring me to use first principles
-- **[MichaelisTrofficus](https://github.com/MichaelisTrofficus)** : For sharing insights on their cookie cutter for Langgraph agents
-- **[iusztinpaul](https://github.com/iusztinpaul)** : For sharing insights on their cookie cutter for Langgraph agents
-
-
-**Built with ❤️ for the AI community**
-
-*Ready to build your next AI agent product? Fork this repository and start building!*
+**MIT License** | [GitHub](https://github.com/harshuljain13/ship-ai-agents)

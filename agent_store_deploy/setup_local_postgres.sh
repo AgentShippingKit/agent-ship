@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Ship AI Agents - Local PostgreSQL Setup Script
+# AgentShip - Local PostgreSQL Setup Script
 # This script sets up a local PostgreSQL database for session storage
 
 set -e  # Exit on any error

@@ -1,5 +1,6 @@
 # Development Dependencies
--r requirements.txt
+# Note: Main dependencies are managed via Pipfile
+# Install with: pipenv install --dev
 
 # Testing
 pytest>=8.3.4

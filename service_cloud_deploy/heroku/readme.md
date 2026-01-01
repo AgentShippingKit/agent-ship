@@ -1,4 +1,4 @@
-# Ship AI Agents - Heroku Deployment
+# AgentShip - Heroku Deployment
 
 This directory contains scripts and documentation for deploying the AI Agents service to Heroku.
 
@@ -104,7 +104,7 @@ heroku restart web.1 --app ai-agents-alpha
 ### 3. Database Connection Issues
 **Problem**: `Database related module not found`
 **Solution**: 
-- Check if `psycopg2-binary` is in requirements.txt
+- Check if `psycopg2-binary` is in Pipfile
 - Verify `SESSION_STORE_URI` is set correctly
 
 ### 4. App Won't Start
@@ -166,6 +166,6 @@ cd ../../agent_store_deploy
 ## 🔗 Related Documentation
 
 - [Main README](../../README.md) - High-level architecture
-- [Local Development](../../LOCAL_DEVELOPMENT.md) - Local setup guide
+- [Installation Guide](../../docs/getting-started/installation.md) - Local setup guide
 - [Agent Store Deploy](../../agent_store_deploy/README.md) - PostgreSQL setup
 - [Postman Collection](../../postman/README.md) - API testing guide

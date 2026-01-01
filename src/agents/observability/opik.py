@@ -1,4 +1,4 @@
-from src.agents.observability.base import BaseObservaber
+from src.agents.observability.base import BaseObserver
 from opik.integrations.adk import OpikTracer
 import opik
 import logging
@@ -19,7 +19,7 @@ opik.configure(
     force=True,
 )
 
-class OpikObserver(BaseObservaber):
+class OpikObserver(BaseObserver):
     """Opik observability."""
     def __init__(self, agent_config: AgentConfig):
         super().__init__(agent_config)

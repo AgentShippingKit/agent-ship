@@ -20,3 +20,15 @@ instruction_template: >
   - flight_plan: str // comes from FlightAgent
   - hotel_plan: str // comes from HotelAgent
   - summary: str // comes from SummaryAgent
+
+tools:
+  # Order matters: flight, then hotel, then summary.
+  - type: agent
+    id: flight_planner
+    agent_class: src.agents.all_agents.orchestrator_pattern.sub_agents.flight_agent.FlightPlannerAgent
+  - type: agent
+    id: hotel_planner
+    agent_class: src.agents.all_agents.orchestrator_pattern.sub_agents.hotel_agent.HotelPlannerAgent
+  - type: agent
+    id: trip_summary
+    agent_class: src.agents.all_agents.orchestrator_pattern.sub_agents.trip_summary_agent.TripSummaryAgent

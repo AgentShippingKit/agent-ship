@@ -1,7 +1,7 @@
 [project]
-name = "ai-agents"
+name = "agentship"
 version = "0.1.0"
-description = "Ship AI Agents - Production-Ready AI Agent Framework"
+description = "AgentShip - An Agent Shipping Kit. Production-ready framework for building, deploying, and operating AI agents."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

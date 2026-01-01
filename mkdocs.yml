@@ -1,0 +1,83 @@
+site_name: AgentShip
+site_description: An Agent Shipping Kit - Production-ready framework for building, deploying, and operating AI agents
+site_author: AgentShip Contributors
+site_url: https://harshuljain13.github.io/ship-ai-agents
+
+repo_name: harshuljain13/ship-ai-agents
+repo_url: https://github.com/harshuljain13/ship-ai-agents
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mermaid2
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quickstart.md
+    - Docker Setup: docker-setup.md
+    - Local Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - Building Agents:
+    - Overview: building-agents/overview.md
+    - Base Agent: building-agents/base-agent.md
+    - Agent Patterns:
+      - Single Agent: building-agents/patterns/single-agent.md
+      - Orchestrator: building-agents/patterns/orchestrator.md
+      - Tool Pattern: building-agents/patterns/tool-pattern.md
+    - Agent Configuration: building-agents/agent-configuration.md
+    - Tools: building-agents/tools.md
+  - API Reference:
+    - BaseAgent: api/base-agent.md
+    - AgentConfig: api/agent-config.md
+    - Core Modules: api/core-modules.md
+    - Models: api/models.md
+  - Deployment:
+    - Overview: deployment/overview.md
+    - Heroku: deployment/heroku.md
+  - Testing:
+    - Overview: testing/overview.md
+    - Writing Tests: testing/writing-tests.md
+  - Contributing: contributing.md

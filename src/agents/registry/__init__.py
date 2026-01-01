@@ -1,5 +1,6 @@
 """Agent Registry - Modular AI agent management system."""
 
+from typing import Union, List
 from .core import AgentRegistry
 from .discovery import AgentDiscovery
 
@@ -10,8 +11,21 @@ registry = AgentRegistry()
 discovery = AgentDiscovery(registry)
 
 # Add discovery methods to the registry
-def discover_agents(agents_dir: str = "src/agents/all_agents") -> None:
-    """Discover agents in the specified directory."""
+def discover_agents(agents_dir: Union[str, List[str]] = None) -> None:
+    """
+    Discover agents in the specified directory(ies).
+    
+    Args:
+        agents_dir: Path(s) to agent directory(ies). If None, uses configuration
+            from settings.agent_directories. Can be:
+            - Single string: "src/agents/all_agents/framework"
+            - List of strings: ["src/agents/all_agents/framework", "src/agents/all_agents/applications"]
+    """
+    if agents_dir is None:
+        # Use configuration from settings
+        from src.service.config import settings
+        agents_dir = settings.agent_directories
+    
     discovery.discover_agents(agents_dir)
 
 def get_agent_instance(name: str, config=None):

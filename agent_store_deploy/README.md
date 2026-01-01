@@ -1,4 +1,4 @@
-# Ship AI Agents - Database Storage Setup
+# AgentShip - Database Storage Setup
 
 This directory contains scripts for setting up PostgreSQL database storage for AI Agents session management.
 
@@ -199,6 +199,6 @@ heroku pg:info --app ai-agents-alpha
 ## 🔗 Related Documentation
 
 - [Main README](../README.md) - High-level architecture
-- [Local Development](../LOCAL_DEVELOPMENT.md) - Local setup guide
+- [Installation Guide](../docs/getting-started/installation.md) - Local setup guide
 - [Heroku Deployment](../service_cloud_deploy/heroku/README.md) - Production deployment
 - [Postman Collection](../postman/README.md) - API testing

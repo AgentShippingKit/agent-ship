@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentShip Debug UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .chat-container {
+            scrollbar-width: thin;
+            scrollbar-color: #4b5563 transparent;
+        }
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 3px; }
+        
+        .typing-indicator span { animation: typing 1.4s infinite both; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .input-field:focus { box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3); }
+    </style>
+</head>
+<body class="h-full bg-gray-900 text-gray-100">
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <aside class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg">AgentShip</h1>
+                        <p class="text-xs text-gray-400">Debug UI</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Agent Selection -->
+            <div class="p-4 border-b border-gray-700">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Select Agent</label>
+                <select id="agent-select" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    <option value="">Loading agents...</option>
+                </select>
+            </div>
+            
+            <!-- Dynamic Input Form -->
+            <div class="flex-1 p-4 overflow-y-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-medium text-gray-300">Input Parameters</h2>
+                    <button id="clear-form-btn" class="text-xs text-gray-400 hover:text-gray-200">Clear</button>
+                </div>
+                
+                <div id="input-form-container">
+                    <p class="text-sm text-gray-500 text-center py-8">Select an agent to see input fields</p>
+                </div>
+                
+                <!-- Send Button -->
+                <div class="mt-4">
+                    <button 
+                        id="send-btn" 
+                        class="w-full bg-primary hover:bg-primary/80 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        disabled
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Send Request
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Session Info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <span id="session-id">No session</span>
+                    <button id="new-session-btn" class="text-primary hover:text-primary/80">+ New Session</button>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="agent-status" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                    <h2 id="current-agent" class="font-medium">Select an agent to start</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="toggle-schema" class="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Schema
+                    </button>
+                    <button id="clear-chat" class="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Chat Area -->
+            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4 chat-container">
+                <!-- Welcome Message -->
+                <div id="welcome-message" class="flex items-center justify-center h-full">
+                    <div class="text-center max-w-md">
+                        <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-400 mb-2">Welcome to AgentShip Debug UI</h3>
+                        <p class="text-sm text-gray-500 mb-4">Select an agent from the sidebar to start testing</p>
+                        <div class="text-xs text-gray-600">
+                            <p>✓ Dynamic input forms based on agent schema</p>
+                            <p>✓ Feedback tracking (👍/👎)</p>
+                            <p>✓ Session management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Schema Panel -->
+        <aside id="schema-panel" class="hidden w-96 bg-gray-800 border-l border-gray-700 flex flex-col">
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                <h3 class="font-medium">Agent Schema</h3>
+                <button id="close-schema" class="text-gray-400 hover:text-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="schema-content" class="flex-1 overflow-y-auto p-4 text-sm">
+                <p class="text-gray-500">Select an agent to view its schema</p>
+            </div>
+        </aside>
+    </div>
+    
+    <script>
+        // ============== State ==============
+        const state = {
+            agents: [],
+            currentAgent: null,
+            currentSchema: null,
+            sessionId: null,
+            userId: `debug_user_${Math.random().toString(36).substr(2, 8)}`,
+            messages: [],
+            isLoading: false
+        };
+        
+        // ============== DOM Elements ==============
+        const elements = {
+            agentSelect: document.getElementById('agent-select'),
+            chatContainer: document.getElementById('chat-container'),
+            welcomeMessage: document.getElementById('welcome-message'),
+            inputFormContainer: document.getElementById('input-form-container'),
+            sendBtn: document.getElementById('send-btn'),
+            currentAgent: document.getElementById('current-agent'),
+            agentStatus: document.getElementById('agent-status'),
+            sessionIdDisplay: document.getElementById('session-id'),
+            newSessionBtn: document.getElementById('new-session-btn'),
+            clearChatBtn: document.getElementById('clear-chat'),
+            clearFormBtn: document.getElementById('clear-form-btn'),
+            toggleSchemaBtn: document.getElementById('toggle-schema'),
+            schemaPanel: document.getElementById('schema-panel'),
+            closeSchemaBtn: document.getElementById('close-schema'),
+            schemaContent: document.getElementById('schema-content')
+        };
+        
+        // ============== API Functions ==============
+        async function fetchAgents() {
+            try {
+                const response = await fetch('/api/debug/agents');
+                const agents = await response.json();
+                state.agents = agents;
+                renderAgentSelect();
+            } catch (error) {
+                console.error('Failed to fetch agents:', error);
+                elements.agentSelect.innerHTML = '<option value="">Error loading agents</option>';
+            }
+        }
+        
+        async function sendRequest() {
+            console.log('⚡ sendRequest v2 - STREAMING ENABLED');
+            if (!state.currentAgent || !state.currentSchema || state.isLoading) return;
+            
+            // Collect form values
+            const formData = collectFormData();
+            if (!formData) return; // Validation failed
+            
+            state.isLoading = true;
+            updateSendButton();
+            
+            // Format user message for display
+            const displayMessage = formatInputForDisplay(formData);
+            addMessage('user', displayMessage, formData);
+            
+            // Use streaming endpoint for real-time events
+            await sendStreamingRequest(formData);
+        }
+        
+        async function sendStreamingRequest(formData) {
+            console.log('🚀🚀🚀 STREAMING v3 - NEW CODE LOADED 🚀🚀🚀');
+            console.log('🚀 Starting streaming request...');
+            
+            // Create a streaming events container
+            const streamContainerId = showStreamingContainer();
+            const events = [];
+            let finalContent = '';
+            let hasReceivedFirstEvent = false;
+            
+            try {
+                console.log('📡 Fetching /api/debug/chat/stream');
+                const response = await fetch('/api/debug/chat/stream', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        agent_name: state.currentAgent,
+                        message: JSON.stringify(formData),
+                        session_id: state.sessionId,
+                        user_id: state.userId,
+                        features: formData
+                    })
+                });
+                
+                console.log('✅ Response received, status:', response.status, 'ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}: ${errorText}`);
+                }
+                
+                if (!response.body) {
+                    throw new Error('Response body is null - cannot stream');
+                }
+                
+                console.log('📖 Getting reader...');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let currentEventType = 'message';
+                let chunkCount = 0;
+                
+                console.log('🔄 Starting read loop...');
+                while (true) {
+                    console.log(`📥 Reading chunk ${chunkCount}...`);
+                    const { value, done } = await reader.read();
+                    chunkCount++;
+                    
+                    if (done) {
+                        console.log('✅ Stream done, total chunks:', chunkCount);
+                        // Process any remaining buffer content when stream ends
+                        if (buffer.trim()) {
+                            console.log('📨 Processing final buffer content:', buffer.length, 'chars', 'preview:', buffer.substring(0, 500));
+                            // Process all remaining messages in buffer
+                            processRemainingBuffer();
+                        }
+                        break;
+                    }
+                    
+                    console.log(`📦 Got chunk ${chunkCount}, size:`, value?.length || 0);
+                    
+                    const decoded = decoder.decode(value, { stream: true });
+                    buffer += decoded;
+                    console.log(`📝 Decoded chunk ${chunkCount}, buffer length:`, buffer.length, 'preview:', buffer.substring(0, 200));
+                    
+                    // Process messages from buffer
+                    processBufferMessages();
+                    
+                    function processBufferMessages() {
+                        // SSE format: "event: <type>\ndata: <json>\n\n"
+                        // Process messages by finding "event:" markers
+                        let processedAny = false;
+                        
+                        // Split by "event:" to find message boundaries (but keep the "event:" in the message)
+                        const eventPattern = /(?=\nevent:)/g;
+                        const messages = buffer.split(eventPattern);
+                        
+                        // If we have multiple messages, process all but the last (might be incomplete)
+                        if (messages.length > 1) {
+                            for (let i = 0; i < messages.length - 1; i++) {
+                                const message = messages[i].trim();
+                                if (message) {
+                                    // Ensure it starts with "event:"
+                                    const msg = message.startsWith('event:') ? message : 'event:' + message;
+                                    processSSEMessage(msg);
+                                    processedAny = true;
+                                }
+                            }
+                            // Keep the last message in buffer (might be incomplete)
+                            buffer = messages[messages.length - 1];
+                        } else {
+                            // Try double newline separation as fallback
+                            const doubleNewlineMessages = buffer.split('\n\n');
+                            if (doubleNewlineMessages.length > 1) {
+                                buffer = doubleNewlineMessages.pop() || '';
+                                for (const message of doubleNewlineMessages) {
+                                    if (message.trim()) {
+                                        processSSEMessage(message);
+                                        processedAny = true;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (!processedAny) {
+                            console.log(`📨 No complete messages found, buffer remaining:`, buffer.length);
+                        }
+                    }
+                    
+                    function processRemainingBuffer() {
+                        // When stream ends, process all remaining content
+                        // Split by "event:" markers
+                        const eventPattern = /(?=\nevent:)/g;
+                        const messages = buffer.split(eventPattern);
+                        
+                        for (const message of messages) {
+                            const msg = message.trim();
+                            if (msg) {
+                                const finalMsg = msg.startsWith('event:') ? msg : 'event:' + msg;
+                                processSSEMessage(finalMsg);
+                            }
+                        }
+                        buffer = ''; // Clear buffer after processing
+                    }
+                    
+                    function processSSEMessage(message) {
+                        if (!message.trim()) return;
+                        
+                        console.log('📝 Processing SSE message:', message.substring(0, 300)); // Log first 300 chars
+                        
+                        const lines = message.split('\n');
+                        let eventType = 'message';
+                        let eventData = null;
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('event:')) {
+                                eventType = line.substring(6).trim();
+                                console.log('🔖 Parsed event type from SSE:', eventType);
+                            } else if (line.startsWith('data:')) {
+                                const dataStr = line.substring(5).trim();
+                                console.log('📦 Parsing data line, length:', dataStr.length, 'preview:', dataStr.substring(0, 100));
+                                try {
+                                    eventData = JSON.parse(dataStr);
+                                    console.log('✅ Parsed eventData:', eventData.type || 'unknown', 'keys:', Object.keys(eventData));
+                                } catch (e) {
+                                    console.error('❌ Failed to parse SSE data:', e, 'line:', line.substring(0, 100));
+                                }
+                            }
+                        }
+                        
+                        if (eventData) {
+                            // Use the type from data if available, otherwise use event type
+                            const type = eventData.type || eventType;
+                            console.log('📨 Received event:', type, 'has text:', !!eventData.text, 'text length:', eventData.text ? eventData.text.length : 0);
+                            
+                            // Remove "Starting..." placeholder on first non-session event
+                            if (!hasReceivedFirstEvent && type !== 'session') {
+                                hasReceivedFirstEvent = true;
+                                const eventsContainer = document.getElementById(`${streamContainerId}-events`);
+                                if (eventsContainer) {
+                                    const placeholder = eventsContainer.querySelector('.animate-spin')?.parentElement;
+                                    if (placeholder) placeholder.remove();
+                                }
+                            }
+                            
+                            // Handle content events immediately for incremental display
+                            if (type === 'content') {
+                                let contentText = eventData.text || eventData.content || '';
+                                if (contentText) {
+                                    // The text might be a JSON string, try to parse it
+                                    try {
+                                        const parsed = JSON.parse(contentText);
+                                        // If it's an object, try to extract meaningful text
+                                        if (typeof parsed === 'object') {
+                                            // Try common fields that might contain the actual response
+                                            contentText = parsed.flight_plan || parsed.response || parsed.text || JSON.stringify(parsed, null, 2);
+                                        }
+                                    } catch (e) {
+                                        // Not JSON, use as-is
+                                        console.log('Content is not JSON, using as plain text');
+                                    }
+                                    
+                                    finalContent += contentText;
+                                    console.log('📝 Updating content, total length:', finalContent.length);
+                                    updateContentInRealTime(streamContainerId, finalContent);
+                                } else {
+                                    console.warn('⚠️ Content event has no text');
+                                }
+                            } else {
+                                handleStreamEvent(eventData, streamContainerId, events);
+                            }
+                            
+                            // Update session ID from session event
+                            if (type === 'session' || eventData.session_id) {
+                                state.sessionId = eventData.session_id;
+                    elements.sessionIdDisplay.textContent = `Session: ${state.sessionId.substr(0, 12)}...`;
+                            }
+                        }
+                    }
+                }
+                
+                // Finalize the streaming container
+                finalizeStreamingContainer(streamContainerId, finalContent, events);
+                
+            } catch (error) {
+                console.error('Streaming error:', error);
+                updateStreamingContainer(streamContainerId, 'error', {
+                    type: 'error',
+                    message: error.message
+                });
+                finalizeStreamingContainer(streamContainerId, `Error: ${error.message}`, []);
+            } finally {
+                state.isLoading = false;
+                updateSendButton();
+            }
+        }
+        
+        function handleStreamEvent(data, containerId, events) {
+            events.push(data);
+            updateStreamingContainer(containerId, data.type, data);
+        }
+        
+        function showStreamingContainer() {
+            const id = `stream-${Date.now()}`;
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'message-bubble fade-in flex justify-start';
+            div.innerHTML = `
+                <div class="max-w-2xl">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="bg-gray-700 border border-gray-600 rounded-2xl rounded-tl-sm px-4 py-3 min-w-[300px]">
+                            <div id="${id}-events" class="space-y-2">
+                                <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Starting...</span>
+                                </div>
+                            </div>
+                            <div id="${id}-content" class="hidden mt-3 pt-3 border-t border-gray-600">
+                                <div class="text-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (elements.welcomeMessage) {
+                elements.welcomeMessage.classList.add('hidden');
+            }
+            elements.chatContainer.appendChild(div);
+            scrollToBottom();
+            return id;
+        }
+        
+        function updateStreamingContainer(containerId, eventType, data) {
+            const eventsContainer = document.getElementById(`${containerId}-events`);
+            if (!eventsContainer) return;
+            
+            const eventEl = document.createElement('div');
+            eventEl.className = 'flex items-center gap-2 text-sm fade-in';
+            
+            // Get the actual type from data if available
+            const type = data.type || eventType;
+            
+            switch (type) {
+                case 'session':
+                    // Session event is handled separately, don't show in UI
+                    return;
+                    
+                case 'thinking':
+                    eventEl.innerHTML = `
+                        <span class="text-blue-400">🤔</span>
+                        <span class="text-blue-300">${escapeHtml(data.message || 'Thinking...')}</span>
+                    `;
+                    break;
+                    
+                case 'tool_call':
+                    eventEl.innerHTML = `
+                        <span class="text-yellow-400">🔧</span>
+                        <span class="text-yellow-300">Calling: <code class="bg-gray-800 px-1 rounded">${escapeHtml(data.tool_name || 'tool')}</code></span>
+                        ${data.arguments && Object.keys(data.arguments).length > 0 ? 
+                            `<span class="text-gray-500 text-xs truncate max-w-[200px]">${escapeHtml(JSON.stringify(data.arguments))}</span>` : ''}
+                    `;
+                    break;
+                    
+                case 'tool_result':
+                    eventEl.innerHTML = `
+                        <span class="text-green-400">✓</span>
+                        <span class="text-green-300">Result from: <code class="bg-gray-800 px-1 rounded">${escapeHtml(data.tool_name || 'tool')}</code></span>
+                    `;
+                    // Optionally show result preview
+                    if (data.result && data.result.length > 0) {
+                        const preview = data.result.length > 100 ? data.result.substring(0, 100) + '...' : data.result;
+                        eventEl.innerHTML += `<span class="text-gray-500 text-xs truncate max-w-[200px]" title="${escapeHtml(data.result)}">${escapeHtml(preview)}</span>`;
+                    }
+                    break;
+                    
+                case 'content':
+                    // Content is handled separately for real-time updates
+                    return;
+                    
+                case 'done':
+                    eventEl.innerHTML = `
+                        <span class="text-green-400">✅</span>
+                        <span class="text-green-300">Complete</span>
+                    `;
+                    break;
+                    
+                case 'error':
+                    eventEl.innerHTML = `
+                        <span class="text-red-400">❌</span>
+                        <span class="text-red-300">Error: ${escapeHtml(data.message || 'Unknown error')}</span>
+                    `;
+                    break;
+                    
+                default:
+                    // Skip unknown event types silently
+                    console.log('Unknown event type:', type, data);
+                    return;
+            }
+            
+            // Remove the "Starting..." placeholder if present
+            const placeholder = eventsContainer.querySelector('.animate-spin')?.parentElement;
+            if (placeholder) placeholder.remove();
+            
+            eventsContainer.appendChild(eventEl);
+            scrollToBottom();
+        }
+        
+        function updateContentInRealTime(containerId, content) {
+            console.log('🎨 updateContentInRealTime called, containerId:', containerId, 'content length:', content.length);
+            const contentDiv = document.getElementById(`${containerId}-content`);
+            if (!contentDiv) {
+                console.error('❌ Content div not found:', `${containerId}-content`);
+                return;
+            }
+            
+            // Show content div as soon as we have content
+            contentDiv.classList.remove('hidden');
+            console.log('✅ Content div is now visible');
+            
+            // Update content incrementally
+            const contentElement = contentDiv.querySelector('.text-sm');
+            if (contentElement) {
+                // Format the content for display
+                let formattedContent = escapeHtml(content)
+                    .replace(/\n/g, '<br>')
+                    .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-800 rounded p-2 my-2 overflow-x-auto"><code>$2</code></pre>');
+                
+                // Check if we should animate (if content is significantly longer than what's already displayed)
+                const currentLength = contentElement.textContent?.length || 0;
+                const newLength = content.length;
+                
+                if (newLength > currentLength + 50) {
+                    // Large jump - animate the new content
+                    animateTextAppearance(contentElement, formattedContent, currentLength);
+                } else {
+                    // Small update - just set it directly
+                    contentElement.innerHTML = formattedContent;
+                }
+                
+                console.log('✅ Content updated in DOM, length:', formattedContent.length);
+            } else {
+                console.error('❌ Content element (.text-sm) not found in content div');
+            }
+            
+            // Remove "Starting..." placeholder if present
+            const eventsContainer = document.getElementById(`${containerId}-events`);
+            if (eventsContainer) {
+                const placeholder = eventsContainer.querySelector('.animate-spin')?.parentElement;
+                if (placeholder) {
+                    placeholder.remove();
+                    console.log('✅ Removed "Starting..." placeholder');
+                }
+            }
+            
+            scrollToBottom();
+        }
+        
+        function animateTextAppearance(element, fullContent, startLength) {
+            // Simple typewriter effect for incremental display
+            const charsToAdd = fullContent.length - startLength;
+            if (charsToAdd <= 0) return;
+            
+            const currentContent = element.innerHTML || '';
+            const newContent = fullContent;
+            
+            // If the difference is large, show it immediately (backend sent it all at once)
+            // Otherwise animate it
+            if (charsToAdd > 100) {
+                // Too much to animate smoothly, just show it
+                element.innerHTML = newContent;
+            } else {
+                // Animate character by character
+                let currentIndex = startLength;
+                const interval = setInterval(() => {
+                    if (currentIndex < newContent.length) {
+                        element.innerHTML = newContent.substring(0, currentIndex + 1);
+                        currentIndex++;
+                        scrollToBottom();
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 10); // 10ms per character = fast but visible
+            }
+        }
+        
+        function finalizeStreamingContainer(containerId, content, events) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const contentDiv = document.getElementById(`${containerId}-content`);
+            if (contentDiv && content) {
+                // Ensure content is visible (might already be visible from real-time updates)
+                contentDiv.classList.remove('hidden');
+                const contentElement = contentDiv.querySelector('.text-sm');
+                if (contentElement) {
+                    contentElement.innerHTML = escapeHtml(content)
+                        .replace(/\n/g, '<br>')
+                        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-800 rounded p-2 my-2 overflow-x-auto"><code>$2</code></pre>');
+                }
+            }
+            
+            // Add timestamp and feedback buttons
+            const timestamp = new Date().toLocaleTimeString();
+            const messageIndex = state.messages.length;
+            
+            // Store the message in state
+            state.messages.push({
+                role: 'assistant',
+                content: content,
+                timestamp: timestamp,
+                feedback: null,
+                events: events
+            });
+            
+            // Add timestamp and controls
+            const wrapper = container.querySelector('.bg-gray-700');
+            if (wrapper) {
+                const controlsHtml = `
+                    <p class="text-xs text-gray-500 mt-3">${timestamp}</p>
+                `;
+                wrapper.insertAdjacentHTML('beforeend', controlsHtml);
+                
+                // Add feedback buttons after the message bubble
+                const feedbackHtml = `
+                    <div class="flex items-center gap-2 mt-2 ml-11">
+                        <button onclick="sendFeedback(${messageIndex}, 'up')" class="feedback-btn p-1 rounded text-gray-500 hover:text-green-400 hover:bg-green-500/10 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                            </svg>
+                        </button>
+                        <button onclick="sendFeedback(${messageIndex}, 'down')" class="feedback-btn p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/>
+                            </svg>
+                        </button>
+                        <button onclick="copyMessage(${messageIndex})" class="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-600/50 transition-all" title="Copy">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.querySelector('.max-w-2xl').insertAdjacentHTML('beforeend', feedbackHtml);
+            }
+        }
+        
+        async function sendFeedback(messageIndex, feedback) {
+            if (!state.currentAgent || messageIndex < 0) return;
+            
+            const msg = state.messages[messageIndex];
+            const prevMsg = messageIndex > 0 ? state.messages[messageIndex - 1] : null;
+            
+            try {
+                await fetch('/api/debug/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId || 'unknown',
+                        message_index: messageIndex,
+                        feedback: feedback,
+                        agent_name: state.currentAgent,
+                        user_message: prevMsg?.role === 'user' ? prevMsg.content : '',
+                        assistant_message: msg.content
+                    })
+                });
+                
+                state.messages[messageIndex].feedback = feedback;
+                renderMessages();
+            } catch (error) {
+                console.error('Failed to send feedback:', error);
+            }
+        }
+        
+        // ============== Form Generation ==============
+        function renderInputForm(schema) {
+            if (!schema || !schema.input || !schema.input.properties) {
+                elements.inputFormContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">No input schema available</p>';
+                return;
+            }
+            
+            const properties = schema.input.properties;
+            const required = schema.input.required || [];
+            const allProps = Object.entries(properties);
+            
+            if (allProps.length === 0) {
+                elements.inputFormContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">No input parameters required</p>';
+                return;
+            }
+            
+            // Separate auto-filled fields from user fields
+            const autoFields = ['session_id', 'user_id'];
+            const userProps = allProps.filter(([name]) => !autoFields.includes(name));
+            const systemProps = allProps.filter(([name]) => autoFields.includes(name));
+            
+            let html = '<div class="space-y-4">';
+            
+            // Render user input fields first
+            for (const [name, prop] of userProps) {
+                const isRequired = required.includes(name);
+                const fieldType = prop.type || 'string';
+                const description = prop.description || '';
+                const defaultValue = prop.default !== undefined ? prop.default : '';
+                
+                html += `
+                    <div class="space-y-1">
+                        <label class="flex items-center gap-1 text-sm font-medium text-gray-300">
+                            ${formatFieldName(name)}
+                            ${isRequired ? '<span class="text-red-400">*</span>' : ''}
+                        </label>
+                        ${description ? `<p class="text-xs text-gray-500">${description}</p>` : ''}
+                        ${generateInputField(name, prop, defaultValue, isRequired)}
+                    </div>
+                `;
+            }
+            
+            // Render auto-filled system fields (session_id, user_id) with pre-filled values
+            if (systemProps.length > 0) {
+                html += `
+                    <div class="border-t border-gray-600 pt-4 mt-4">
+                        <p class="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Auto-filled (editable)
+                        </p>
+                `;
+                
+                for (const [name, prop] of systemProps) {
+                    const description = prop.description || '';
+                    // Generate default values for system fields
+                    let defaultValue = '';
+                    if (name === 'session_id') {
+                        defaultValue = state.sessionId || `debug_${Date.now().toString(36)}`;
+                    } else if (name === 'user_id') {
+                        defaultValue = state.userId;
+                    }
+                    
+                    html += `
+                        <div class="space-y-1">
+                            <label class="flex items-center gap-1 text-sm font-medium text-gray-400">
+                                ${formatFieldName(name)}
+                                <span class="text-xs text-gray-500">(auto)</span>
+                            </label>
+                            ${description ? `<p class="text-xs text-gray-500">${description}</p>` : ''}
+                            <input 
+                                type="text"
+                                id="input-${name}"
+                                name="${name}"
+                                class="input-field w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-sm text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                value="${defaultValue}"
+                            />
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            elements.inputFormContainer.innerHTML = html;
+        }
+        
+        function generateInputField(name, prop, defaultValue, isRequired) {
+            const type = prop.type || 'string';
+            const baseClass = 'input-field w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all';
+            
+            // Handle arrays
+            if (type === 'array') {
+                return `
+                    <textarea 
+                        id="input-${name}"
+                        name="${name}"
+                        class="${baseClass} min-h-[80px]"
+                        placeholder="Enter JSON array: [...]"
+                        ${isRequired ? 'required' : ''}
+                    >${defaultValue ? JSON.stringify(defaultValue, null, 2) : ''}</textarea>
+                    <p class="text-xs text-gray-600 mt-1">Enter as JSON array</p>
+                `;
+            }
+            
+            // Handle objects
+            if (type === 'object') {
+                return `
+                    <textarea 
+                        id="input-${name}"
+                        name="${name}"
+                        class="${baseClass} min-h-[80px]"
+                        placeholder="Enter JSON object: {...}"
+                        ${isRequired ? 'required' : ''}
+                    >${defaultValue ? JSON.stringify(defaultValue, null, 2) : ''}</textarea>
+                    <p class="text-xs text-gray-600 mt-1">Enter as JSON object</p>
+                `;
+            }
+            
+            // Handle integers
+            if (type === 'integer' || type === 'number') {
+                return `
+                    <input 
+                        type="number"
+                        id="input-${name}"
+                        name="${name}"
+                        class="${baseClass}"
+                        value="${defaultValue}"
+                        ${isRequired ? 'required' : ''}
+                    />
+                `;
+            }
+            
+            // Handle booleans
+            if (type === 'boolean') {
+                return `
+                    <select 
+                        id="input-${name}"
+                        name="${name}"
+                        class="${baseClass}"
+                    >
+                        <option value="true" ${defaultValue === true ? 'selected' : ''}>true</option>
+                        <option value="false" ${defaultValue === false ? 'selected' : ''}>false</option>
+                    </select>
+                `;
+            }
+            
+            // Handle strings with long text (check description for hints)
+            const isLongText = name.includes('text') || name.includes('message') || 
+                              name.includes('content') || name.includes('description') ||
+                              (prop.description && prop.description.toLowerCase().includes('text'));
+            
+            if (isLongText) {
+                return `
+                    <textarea 
+                        id="input-${name}"
+                        name="${name}"
+                        class="${baseClass} min-h-[80px]"
+                        placeholder="Enter ${formatFieldName(name).toLowerCase()}..."
+                        ${isRequired ? 'required' : ''}
+                    >${defaultValue}</textarea>
+                `;
+            }
+            
+            // Default: text input
+            return `
+                <input 
+                    type="text"
+                    id="input-${name}"
+                    name="${name}"
+                    class="${baseClass}"
+                    placeholder="Enter ${formatFieldName(name).toLowerCase()}..."
+                    value="${defaultValue}"
+                    ${isRequired ? 'required' : ''}
+                />
+            `;
+        }
+        
+        function collectFormData() {
+            if (!state.currentSchema || !state.currentSchema.input) return null;
+            
+            const properties = state.currentSchema.input.properties || {};
+            const required = state.currentSchema.input.required || [];
+            const formData = {};
+            let hasError = false;
+            
+            for (const [name, prop] of Object.entries(properties)) {
+                const element = document.getElementById(`input-${name}`);
+                if (!element) continue;
+                
+                let value = element.value.trim();
+                const type = prop.type || 'string';
+                
+                // Check required fields (except auto-filled ones which always have values)
+                const isAutoField = ['session_id', 'user_id'].includes(name);
+                if (required.includes(name) && !value && !isAutoField) {
+                    element.classList.add('border-red-500');
+                    hasError = true;
+                    continue;
+                } else {
+                    element.classList.remove('border-red-500');
+                }
+                
+                // Skip empty optional fields (but not auto-filled ones)
+                if (!value && !required.includes(name) && !isAutoField) continue;
+                
+                // For auto-filled fields, use default if empty
+                if (isAutoField && !value) {
+                    if (name === 'session_id') {
+                        value = state.sessionId || `debug_${Date.now().toString(36)}`;
+                    } else if (name === 'user_id') {
+                        value = state.userId;
+                    }
+                }
+                
+                // Parse value based on type
+                try {
+                    if (type === 'integer') {
+                        value = parseInt(value, 10);
+                    } else if (type === 'number') {
+                        value = parseFloat(value);
+                    } else if (type === 'boolean') {
+                        value = value === 'true';
+                    } else if (type === 'array' || type === 'object') {
+                        value = JSON.parse(value);
+                    }
+                } catch (e) {
+                    element.classList.add('border-red-500');
+                    hasError = true;
+                    continue;
+                }
+                
+                formData[name] = value;
+            }
+            
+            if (hasError) {
+                return null;
+            }
+            
+            return formData;
+        }
+        
+        function formatFieldName(name) {
+            return name
+                .replace(/_/g, ' ')
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase())
+                .trim();
+        }
+        
+        function formatInputForDisplay(formData) {
+            // Create a readable display of the input
+            const lines = [];
+            for (const [key, value] of Object.entries(formData)) {
+                if (['session_id', 'user_id'].includes(key)) continue;
+                const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                lines.push(`**${formatFieldName(key)}**: ${displayValue}`);
+            }
+            return lines.join('\n') || 'Empty request';
+        }
+        
+        function clearForm() {
+            const inputs = elements.inputFormContainer.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = input.defaultValue || '';
+                }
+                input.classList.remove('border-red-500');
+            });
+        }
+        
+        // ============== UI Functions ==============
+        function renderAgentSelect() {
+            elements.agentSelect.innerHTML = '<option value="">Select an agent...</option>';
+            state.agents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.name;
+                option.textContent = agent.name;
+                elements.agentSelect.appendChild(option);
+            });
+        }
+        
+        function addMessage(role, content, rawData = null, logs = []) {
+            const timestamp = new Date().toLocaleTimeString();
+            state.messages.push({ role, content, timestamp, feedback: null, rawData, logs });
+            renderMessages();
+            scrollToBottom();
+        }
+        
+        function renderMessages() {
+            if (state.messages.length > 0) {
+                elements.welcomeMessage.classList.add('hidden');
+            }
+            
+            const existingMessages = elements.chatContainer.querySelectorAll('.message-bubble');
+            existingMessages.forEach(el => el.remove());
+            
+            state.messages.forEach((msg, index) => {
+                const messageEl = createMessageElement(msg, index);
+                const typingIndicator = elements.chatContainer.querySelector('.typing-indicator-container');
+                if (typingIndicator) {
+                    elements.chatContainer.insertBefore(messageEl, typingIndicator);
+                } else {
+                    elements.chatContainer.appendChild(messageEl);
+                }
+            });
+        }
+        
+        function createMessageElement(msg, index) {
+            const div = document.createElement('div');
+            div.className = `message-bubble fade-in ${msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}`;
+            
+            const isAssistant = msg.role === 'assistant';
+            const isError = msg.role === 'error';
+            const hasLogs = isAssistant && msg.logs && msg.logs.length > 0;
+            
+            // Format content with markdown-style bold
+            const formattedContent = msg.content
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="text-primary">$1</strong>')
+                .replace(/\n/g, '<br>');
+            
+            // Build logs section if available
+            let logsHtml = '';
+            if (hasLogs) {
+                const logsContent = msg.logs.map(log => {
+                    const iconColor = log.category === 'tool' ? 'text-yellow-400' : 
+                                      log.category === 'llm' ? 'text-blue-400' : 
+                                      log.category === 'error' ? 'text-red-400' : 
+                                      log.category === 'warning' ? 'text-orange-400' : 'text-gray-500';
+                    const icon = log.category === 'tool' ? '🔧' : 
+                                 log.category === 'llm' ? '🤖' : 
+                                 log.category === 'error' ? '❌' : 
+                                 log.category === 'warning' ? '⚠️' : '📝';
+                    return `<div class="flex items-start gap-2 py-1 text-xs">
+                        <span class="flex-shrink-0">${icon}</span>
+                        <span class="text-gray-500">${log.timestamp}</span>
+                        <span class="${iconColor} truncate flex-1">${escapeHtml(log.message)}</span>
+                    </div>`;
+                }).join('');
+                
+                const toolCount = msg.logs.filter(l => l.category === 'tool').length;
+                const llmCount = msg.logs.filter(l => l.category === 'llm').length;
+                
+                logsHtml = `
+                    <div class="mt-3 border-t border-gray-600 pt-2">
+                        <button onclick="toggleLogs(${index})" class="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-300 transition-colors">
+                            <svg class="w-4 h-4 transition-transform" id="logs-chevron-${index}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            <span>Debug Logs</span>
+                            <span class="flex items-center gap-1 ml-auto">
+                                ${toolCount > 0 ? `<span class="bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">🔧 ${toolCount} tool${toolCount > 1 ? 's' : ''}</span>` : ''}
+                                ${llmCount > 0 ? `<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">🤖 ${llmCount}</span>` : ''}
+                            </span>
+                        </button>
+                        <div id="logs-content-${index}" class="hidden mt-2 max-h-48 overflow-y-auto bg-gray-800 rounded-lg p-2 font-mono">
+                            ${logsContent}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = `
+                <div class="max-w-2xl ${msg.role === 'user' ? 'order-2' : ''}">
+                    <div class="flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            msg.role === 'user' ? 'bg-primary' : 
+                            isError ? 'bg-red-500' : 'bg-gray-600'
+                        }">
+                            ${msg.role === 'user' ? 
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' :
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'
+                            }
+                        </div>
+                        <div class="${msg.role === 'user' ? 'bg-primary/20 border border-primary/30' : isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-gray-700 border border-gray-600'} rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'}">
+                            <div class="text-sm">${formattedContent}</div>
+                            <p class="text-xs text-gray-500 mt-2">${msg.timestamp}</p>
+                            ${logsHtml}
+                        </div>
+                    </div>
+                    ${isAssistant ? `
+                        <div class="flex items-center gap-2 mt-2 ml-11">
+                            <button onclick="sendFeedback(${index}, 'up')" class="feedback-btn p-1 rounded ${msg.feedback === 'up' ? 'bg-green-500/20 text-green-400' : 'text-gray-500 hover:text-green-400 hover:bg-green-500/10'} transition-all">
+                                <svg class="w-4 h-4" fill="${msg.feedback === 'up' ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                                </svg>
+                            </button>
+                            <button onclick="sendFeedback(${index}, 'down')" class="feedback-btn p-1 rounded ${msg.feedback === 'down' ? 'bg-red-500/20 text-red-400' : 'text-gray-500 hover:text-red-400 hover:bg-red-500/10'} transition-all">
+                                <svg class="w-4 h-4" fill="${msg.feedback === 'down' ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/>
+                                </svg>
+                            </button>
+                            <button onclick="copyMessage(${index})" class="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-600/50 transition-all" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function showTypingIndicator() {
+            const id = `typing-${Date.now()}`;
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'typing-indicator-container flex justify-start fade-in';
+            div.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="bg-gray-700 border border-gray-600 rounded-2xl rounded-tl-sm px-4 py-3">
+                        <div class="typing-indicator flex gap-1">
+                            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                            <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            elements.chatContainer.appendChild(div);
+            scrollToBottom();
+            return id;
+        }
+        
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+        
+        function scrollToBottom() {
+            elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+        }
+        
+        function updateSendButton() {
+            const hasAgent = !!state.currentAgent;
+            elements.sendBtn.disabled = !hasAgent || state.isLoading;
+            elements.sendBtn.innerHTML = state.isLoading ? 
+                '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...' :
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Send Request';
+        }
+        
+        function renderSchema(schema) {
+            if (!schema) {
+                elements.schemaContent.innerHTML = '<p class="text-gray-500">Failed to load schema</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            if (schema.input && Object.keys(schema.input.properties || {}).length > 0) {
+                html += `
+                    <div class="mb-6">
+                        <h4 class="font-medium text-green-400 mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                            Input Schema
+                        </h4>
+                        <div class="bg-gray-900 rounded-lg p-3 space-y-3">
+                            ${Object.entries(schema.input.properties).map(([name, prop]) => `
+                                <div class="border-b border-gray-700 pb-2 last:border-0 last:pb-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-primary font-mono text-sm">${name}</span>
+                                        <span class="text-xs px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">${prop.type || 'string'}</span>
+                                        ${schema.input.required?.includes(name) ? '<span class="text-xs text-red-400">required</span>' : ''}
+                                    </div>
+                                    ${prop.description ? `<p class="text-gray-400 text-xs mt-1">${prop.description}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (schema.output && Object.keys(schema.output.properties || {}).length > 0) {
+                html += `
+                    <div>
+                        <h4 class="font-medium text-blue-400 mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                            Output Schema
+                        </h4>
+                        <div class="bg-gray-900 rounded-lg p-3 space-y-3">
+                            ${Object.entries(schema.output.properties).map(([name, prop]) => `
+                                <div class="border-b border-gray-700 pb-2 last:border-0 last:pb-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-secondary font-mono text-sm">${name}</span>
+                                        <span class="text-xs px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">${prop.type || 'string'}</span>
+                                    </div>
+                                    ${prop.description ? `<p class="text-gray-400 text-xs mt-1">${prop.description}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            elements.schemaContent.innerHTML = html || '<p class="text-gray-500">No schema available</p>';
+        }
+        
+        function copyMessage(index) {
+            const msg = state.messages[index];
+            navigator.clipboard.writeText(msg.content);
+        }
+        
+        function toggleLogs(index) {
+            const content = document.getElementById(`logs-content-${index}`);
+            const chevron = document.getElementById(`logs-chevron-${index}`);
+            if (content && chevron) {
+                content.classList.toggle('hidden');
+                chevron.classList.toggle('rotate-180');
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function clearChat() {
+            state.messages = [];
+            state.sessionId = null;
+            elements.sessionIdDisplay.textContent = 'No session';
+            elements.chatContainer.querySelectorAll('.message-bubble, .typing-indicator-container').forEach(el => el.remove());
+            elements.welcomeMessage.classList.remove('hidden');
+        }
+        
+        // ============== Event Handlers ==============
+        elements.agentSelect.addEventListener('change', async (e) => {
+            const agentName = e.target.value;
+            
+            if (!agentName) {
+                state.currentAgent = null;
+                state.currentSchema = null;
+                elements.currentAgent.textContent = 'Select an agent to start';
+                elements.agentStatus.className = 'w-2 h-2 rounded-full bg-gray-500';
+                elements.inputFormContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">Select an agent to see input fields</p>';
+                updateSendButton();
+                return;
+            }
+            
+            state.currentAgent = agentName;
+            elements.currentAgent.textContent = agentName;
+            elements.agentStatus.className = 'w-2 h-2 rounded-full bg-green-500 pulse-dot';
+            
+            // Find agent schema
+            const agent = state.agents.find(a => a.name === agentName);
+            if (agent) {
+                state.currentSchema = {
+                    input: agent.input_schema,
+                    output: agent.output_schema
+                };
+                renderInputForm(state.currentSchema);
+                renderSchema(state.currentSchema);
+            }
+            
+            clearChat();
+            updateSendButton();
+        });
+        
+        elements.sendBtn.addEventListener('click', sendRequest);
+        
+        elements.newSessionBtn.addEventListener('click', () => {
+            if (state.currentAgent) {
+                clearChat();
+                clearForm();
+            }
+        });
+        
+        elements.clearChatBtn.addEventListener('click', clearChat);
+        elements.clearFormBtn.addEventListener('click', clearForm);
+        
+        elements.toggleSchemaBtn.addEventListener('click', () => {
+            elements.schemaPanel.classList.toggle('hidden');
+        });
+        
+        elements.closeSchemaBtn.addEventListener('click', () => {
+            elements.schemaPanel.classList.add('hidden');
+        });
+        
+        // Enter key to submit
+        elements.inputFormContainer.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                sendRequest();
+            }
+        });
+        
+        // ============== Initialize ==============
+        fetchAgents();
+    </script>
+</body>
+</html>

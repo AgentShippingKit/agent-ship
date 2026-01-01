@@ -97,12 +97,20 @@ class AgentRegistry:
             else:
                 # Try to create with default constructor
                 instance = agent_class()
-        except TypeError as e:
+        except (TypeError, ValueError) as e:
             # If the agent doesn't accept config parameter, try without it
-            if "takes 1 positional argument but 2 were given" in str(e):
-                logger.info(f"Agent {agent_class.__name__} doesn't accept config parameter, creating without it")
-                instance = agent_class()
+            error_msg = str(e)
+            if ("takes 1 positional argument but 2 were given" in error_msg or 
+                "takes 0 positional arguments but 1 was given" in error_msg or
+                "unexpected keyword argument" in error_msg.lower()):
+                logger.info(f"Agent {agent_class.__name__} doesn't accept config parameter, creating without it. Error: {error_msg}")
+                try:
+                    instance = agent_class()
+                except Exception as e2:
+                    logger.error(f"Failed to create {agent_class.__name__} even without config: {e2}")
+                    raise
             else:
+                logger.error(f"Unexpected error creating {agent_class.__name__}: {e}")
                 raise
         
         # Cache the instance (singleton)
@@ -145,7 +153,8 @@ class AgentRegistry:
                 "description": config.description,
                 "model": config.model.value,
                 "provider": config.model_provider.name.value,
-                "temperature": config.temperature
+                "temperature": config.temperature,
+                "max_followups": config.max_followups
             }
         
         return info

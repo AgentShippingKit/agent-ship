@@ -3,7 +3,7 @@
 import os
 import importlib
 import logging
-from typing import Optional
+from typing import Optional, List, Union
 from src.agents.all_agents.base_agent import BaseAgent
 from src.agents.configs.agent_config import AgentConfig
 
@@ -17,29 +17,38 @@ class AgentDiscovery:
         """Initialize the discovery with a registry instance."""
         self.registry = registry
     
-    def discover_agents(self, agents_dir: str = "src/agents") -> None:
+    def discover_agents(self, agents_dir: Union[str, List[str]] = "src/agents") -> None:
         """
-        Automatically discover and register agents from the agents directory.
+        Automatically discover and register agents from the agents directory(ies).
         
         Args:
-            agents_dir: Path to the agents directory
+            agents_dir: Path(s) to the agents directory(ies). Can be:
+                - Single string path: "src/agents/all_agents"
+                - List of paths: ["src/agents/all_agents/framework", "src/agents/all_agents/applications"]
         """
-        logger.info(f"Discovering agents in {agents_dir}")
+        # Normalize to list
+        if isinstance(agents_dir, str):
+            agents_dirs = [agents_dir]
+        else:
+            agents_dirs = agents_dir
         
-        if not os.path.exists(agents_dir):
-            logger.warning(f"Agents directory {agents_dir} does not exist")
-            return
-        
-        # Walk through the agents directory
-        for root, dirs, files in os.walk(agents_dir):
-            # Skip __pycache__ directories
-            dirs[:] = [d for d in dirs if d != '__pycache__']
+        for agents_dir in agents_dirs:
+            logger.info(f"Discovering agents in {agents_dir}")
             
-            # Look for Python files that might contain agents
-            for file in files:
-                if file.endswith('.py') and not file.startswith('__'):
-                    module_path = os.path.join(root, file)
-                    self._try_register_agent_from_file(module_path)
+            if not os.path.exists(agents_dir):
+                logger.warning(f"Agents directory {agents_dir} does not exist, skipping")
+                continue
+            
+            # Walk through the agents directory
+            for root, dirs, files in os.walk(agents_dir):
+                # Skip __pycache__ directories
+                dirs[:] = [d for d in dirs if d != '__pycache__']
+                
+                # Look for Python files that might contain agents
+                for file in files:
+                    if file.endswith('.py') and not file.startswith('__'):
+                        module_path = os.path.join(root, file)
+                        self._try_register_agent_from_file(module_path)
     
     def _try_register_agent_from_file(self, file_path: str) -> None:
         """
