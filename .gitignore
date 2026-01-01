@@ -30,6 +30,7 @@ env/
 .env
 .env.local
 .env.prod
+.env.bak
 .env.*.local
 
 # IDE
