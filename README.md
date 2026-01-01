@@ -1,10 +1,20 @@
-# AgentShip
+<p align="center">
+  <img src="./branding/github-banner.svg" alt="AgentShip" width="100%">
+</p>
 
-**Build and deploy AI agents in minutes, not weeks.**
+<p align="center">
+  <strong>Build and deploy AI agents in minutes, not weeks.</strong>
+</p>
 
-AgentShip is the **production layer** for AI agents. Built on Google ADK, it provides everything you need to ship agents to production: REST API, session management, observability, and one-command deployment.
+<p align="center">
+  AgentShip is the <strong>production layer</strong> for AI agents. Built on Google ADK, it provides everything you need to ship agents to production: REST API, session management, observability, and one-command deployment.
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)]
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+</p>
 
 ---
 

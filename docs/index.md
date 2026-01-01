@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../branding/docs-header.svg" alt="AgentShip" width="100%">
+</p>
+
 # AgentShip Documentation
 
 **Build and deploy AI agents in minutes, not weeks.**
