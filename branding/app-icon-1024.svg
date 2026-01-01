@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
+  
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#0F172A"/>
+  
+  <g transform="translate(256, 272)">
+    
+    <!-- Tilted rocket - scaled up -->
+    <g transform="rotate(-30)">
+      <path d="M0 -96 
+               L40 -24
+               L28 -24
+               L28 64
+               L-28 64
+               L-28 -24
+               L-40 -24
+               Z" 
+            fill="#E2E8F0"/>
+      
+      <!-- Agent window -->
+      <circle cx="0" cy="8" r="24" fill="#6366F1"/>
+      <circle cx="0" cy="8" r="12" fill="#A5B4FC"/>
+      
+      <!-- Exhaust -->
+      <path d="M-16 64 L0 96 L16 64" fill="#0D9488"/>
+      <path d="M-8 64 L0 80 L8 64" fill="#5EEAD4"/>
+    </g>
+    
+    <!-- Motion trail -->
+    <circle cx="-80" cy="88" r="8" fill="#64748B" opacity="0.4"/>
+    <circle cx="-56" cy="64" r="10" fill="#64748B" opacity="0.6"/>
+    
+    <!-- Verified badge -->
+    <circle cx="80" cy="-64" r="20" fill="#0D9488"/>
+    <path d="M72 -64 L78 -58 L90 -72" 
+          fill="none" 
+          stroke="white" 
+          stroke-width="6" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+    
+  </g>
+  
+</svg>

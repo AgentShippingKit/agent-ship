@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  
+  <g transform="translate(24, 26)">
+    
+    <!-- Simplified tilted rocket -->
+    <g transform="rotate(-30)">
+      <path d="M0 -18 
+               L7.5 -4.5
+               L5 -4.5
+               L5 12
+               L-5 12
+               L-5 -4.5
+               L-7.5 -4.5
+               Z" 
+            fill="#1E293B"/>
+      
+      <!-- Agent dot -->
+      <circle cx="0" cy="1.5" r="4.5" fill="#6366F1"/>
+      <circle cx="0" cy="1.5" r="2" fill="#A5B4FC"/>
+      
+      <!-- Exhaust -->
+      <path d="M-3 12 L0 18 L3 12" fill="#0D9488"/>
+    </g>
+    
+    <!-- Badge -->
+    <circle cx="15" cy="-12" r="4" fill="#0D9488"/>
+    <path d="M13 -12 L14.5 -10.5 L17.5 -14" 
+          fill="none" 
+          stroke="white" 
+          stroke-width="1.5" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+    
+  </g>
+  
+</svg>
