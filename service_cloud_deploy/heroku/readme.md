@@ -138,8 +138,9 @@ curl https://your-app-name.herokuapp.com/health
 ```
 
 ### API Documentation
-- **Swagger UI**: `https://your-app-name.herokuapp.com/docs`
-- **ReDoc**: `https://your-app-name.herokuapp.com/redoc`
+- **Swagger UI**: `https://your-app-name.herokuapp.com/swagger`
+- **Framework Docs**: `https://your-app-name.herokuapp.com/docs`
+- **ReDoc**: `https://your-app-name.herokuapp.com/redoc` (redirects to /docs)
 
 ## 🗄️ Database Setup
 
@@ -166,6 +167,8 @@ cd ../../agent_store_deploy
 ## 🔗 Related Documentation
 
 - [Main README](../../README.md) - High-level architecture
-- [Installation Guide](../../docs/getting-started/installation.md) - Local setup guide
+- [Full Documentation](http://localhost:7001/docs) - Complete documentation (when server is running)
 - [Agent Store Deploy](../../agent_store_deploy/README.md) - PostgreSQL setup
 - [Postman Collection](../../postman/README.md) - API testing guide
+
+**Note**: All documentation is available at `/docs` when the server is running.

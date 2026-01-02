@@ -49,7 +49,8 @@ make docker-setup
 - ✅ Start everything
 
 **Access your services:**
-- 🔌 **API**: http://localhost:7001/swagger
+- 🔌 **API (Swagger)**: http://localhost:7001/swagger
+- 📚 **Documentation**: http://localhost:7001/docs
 - 🔧 **Debug UI**: http://localhost:7001/debug-ui
 
 ### Next Time (After First Setup)
@@ -169,9 +170,12 @@ The `docker-compose.yml` automatically overrides the database URL for Docker net
 
 ## 📚 Documentation
 
-- [Quick Start](docs/getting-started/quickstart.md) - Detailed guide
-- [Building Agents](docs/building-agents/overview.md) - Agent patterns
-- [Full Docs](docs/index.md) - Everything
+- **📖 Full Documentation**: http://localhost:7001/docs (when running locally)
+- **🚀 Quick Start**: http://localhost:7001/docs (see "Quick Start" in sidebar)
+- **🔧 Building Agents**: http://localhost:7001/docs (see "Building Agents" in sidebar)
+- **📡 API Reference**: http://localhost:7001/docs (see "API Reference" in sidebar)
+
+All documentation is available at `/docs` when the server is running.
 
 ---
 

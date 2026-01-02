@@ -165,9 +165,9 @@ echo "   ${YELLOW}make help${NC}"
 echo ""
 
 print_info "📚 Documentation:"
-echo "   - Installation: ${YELLOW}docs/getting-started/installation.md${NC}"
-echo "   - API Docs: ${YELLOW}http://localhost:7001/docs${NC} (after starting server)"
-echo "   - Full Docs: ${YELLOW}make docs-serve${NC}"
+echo "   - Full Documentation: ${YELLOW}http://localhost:7001/docs${NC} (after starting server)"
+echo "   - API Docs (Swagger): ${YELLOW}http://localhost:7001/swagger${NC}"
+echo "   - Build docs: ${YELLOW}make docs-build${NC}"
 echo ""
 
 print_warning "⚠️  Remember to add your API keys to .env before running the server!"

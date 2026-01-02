@@ -78,7 +78,7 @@ The collection is organized into folders for better testing:
 - **Health Check**: `http://localhost:7001/health`
 - **API Docs (Swagger)**: `http://localhost:7001/swagger`
 - **API Docs (ReDoc)**: `http://localhost:7001/redoc`
-- **Framework Docs**: `http://localhost:7001/docs` (after building with `mkdocs build`)
+- **Framework Docs**: `http://localhost:7001/docs` (after building with `make docs-build`)
 
 ### Production
 - **Base URL**: `https://your-production-url.herokuapp.com` (replace with your actual production URL)
@@ -336,6 +336,6 @@ GET {{base_url}}/health
 ## 📚 Related Documentation
 
 - [Main README](../README.md) - High-level architecture
-- [Installation Guide](../docs/getting-started/installation.md) - Local setup guide
+- [Full Documentation](http://localhost:7001/docs) - Complete documentation (when server is running)
 - [Heroku Deployment](../service_cloud_deploy/heroku/README.md) - Production deployment
 - [Database Setup](../agent_store_deploy/README.md) - Database configuration
