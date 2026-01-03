@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from dotenv import load_dotenv
-from src.agents.registry import discover_agents
+from src.agent_framework.registry import discover_agents
 from src.service.routers.rest_router import router as rest_router
 from debug_ui.router import router as debug_router
 load_dotenv()
@@ -39,7 +39,7 @@ app = FastAPI(
     redoc_url=None,  # Disable default /redoc (redirect to /docs)
     openapi_url="/openapi.json",  # OpenAPI JSON at /openapi.json
     swagger_ui_parameters={
-        "faviconUrl": "/branding/favicon-32.svg",
+        "faviconUrl": "/branding/favicons/favicon-32.png",
     },
 )
 
@@ -47,9 +47,9 @@ app = FastAPI(
 @app.get("/favicon.ico")
 async def favicon():
     """Serve favicon for Swagger UI and browser tabs."""
-    favicon_path = os.path.join(branding_path, "favicon-32.svg")
+    favicon_path = os.path.join(branding_path, "favicons", "favicon-32.png")
     if os.path.exists(favicon_path):
-        return FileResponse(favicon_path, media_type="image/svg+xml")
+        return FileResponse(favicon_path, media_type="image/png")
     # Fallback to 204 No Content if favicon not found
     from fastapi.responses import Response
     return Response(status_code=204)
@@ -104,7 +104,7 @@ else:
         <html>
         <head>
             <title>AgentShip Documentation</title>
-            <link rel="icon" type="image/svg+xml" href="/branding/favicon-32.svg">
+            <link rel="icon" type="image/png" href="/branding/favicons/favicon-32.png">
             <style>
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
                        max-width: 900px; margin: 50px auto; padding: 20px; 
@@ -126,7 +126,7 @@ else:
         <body>
             <div class="container">
                 <div style="text-align: center; margin: -40px -40px 30px -40px; padding: 20px 0; background: #F8FAFC; border-radius: 8px 8px 0 0;">
-                    <img src="/branding/docs-header.svg" alt="AgentShip Documentation" style="width: 100%; max-width: 960px; height: auto;" />
+                    <img src="/branding/banners/docs-header@3x.png" alt="AgentShip Documentation" style="width: 100%; max-width: 960px; height: auto;" />
                 </div>
                 <h1>📚 AgentShip Documentation</h1>
                 <p class="subtitle">All documentation in one place</p>
@@ -158,7 +158,7 @@ if os.path.exists(branding_path):
         app.mount("/branding", StaticFiles(directory=branding_path), name="branding")
         logger.info(f"🎨 Branding assets mounted at /branding from {branding_path}")
         # Test that a file exists
-        test_file = os.path.join(branding_path, "logo-icon.svg")
+        test_file = os.path.join(branding_path, "icons", "icon-light-2048.png")
         if os.path.exists(test_file):
             logger.info(f"✅ Test file exists: {test_file}")
         else:

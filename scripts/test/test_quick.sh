@@ -70,7 +70,7 @@ fi
 
 # Test 4: Check if core modules can be imported
 print_info "Test 4: Testing module imports..."
-if pipenv run python -c "import src.service.main; import src.agents.registry.core" 2>/dev/null; then
+if pipenv run python -c "import src.service.main; import src.agent_framework.registry.core" 2>/dev/null; then
     print_success "Core modules can be imported"
 else
     print_error "Failed to import core modules. Check your installation."

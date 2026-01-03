@@ -1,0 +1,29 @@
+# Heroku slugignore - files to exclude from the Heroku slug
+
+# Ignore other package managers (we use Pipenv)
+uv.lock
+requirements.txt
+requirements-dev.txt
+pyproject.toml
+
+# Development files
+*.md
+docs/
+tests/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Local development
+.env.example
+docker-compose*.yml
+Makefile

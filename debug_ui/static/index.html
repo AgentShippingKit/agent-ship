@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgentShip Debug UI</title>
     <!-- Favicon with white background -->
-    <link rel="icon" type="image/svg+xml" href="/branding/favicon-32.svg">
-    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/branding/favicon-16.svg">
+    <link rel="icon" type="image/png" href="/branding/favicons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/branding/favicons/favicon-16.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -70,7 +70,7 @@
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <img src="/branding/logo-icon.svg" alt="AgentShip" class="w-10 h-10" />
+                        <img src="/branding/icons/icon-light-2048.png" alt="AgentShip" class="w-10 h-10" />
                         <div>
                             <h1 class="font-bold text-lg text-gray-900 dark:text-gray-100">AgentShip</h1>
                             <p class="text-xs text-gray-500 dark:text-gray-400">Debug UI</p>
@@ -287,6 +287,9 @@
             let finalContent = '';
             let hasReceivedFirstEvent = false;
             
+            // Clear token queue for this container when starting new stream
+            tokenQueues.delete(streamContainerId);
+            
             try {
                 console.log('📡 Fetching /api/debug/chat/stream');
                 const response = await fetch('/api/debug/chat/stream', {
@@ -446,7 +449,7 @@
                                 }
                             }
                             
-                            // Handle content events immediately for incremental display
+                            // Handle content events for animated typing effect
                             if (type === 'content') {
                                 let contentText = eventData.text || eventData.content || '';
                                 if (contentText) {
@@ -463,9 +466,11 @@
                                         console.log('Content is not JSON, using as plain text');
                                     }
                                     
+                                    // Accumulate for final content
                                     finalContent += contentText;
-                                    console.log('📝 Updating content, total length:', finalContent.length);
-                                    updateContentInRealTime(streamContainerId, finalContent);
+                                    
+                                    // Append token with animation delay for ChatGPT-like typing effect
+                                    appendTokenWithAnimation(streamContainerId, contentText);
                                 } else {
                                     console.warn('⚠️ Content event has no text');
                                 }
@@ -617,54 +622,76 @@
             scrollToBottom();
         }
         
-        function updateContentInRealTime(containerId, content) {
-            console.log('🎨 updateContentInRealTime called, containerId:', containerId, 'content length:', content.length);
-            const contentDiv = document.getElementById(`${containerId}-content`);
-            if (!contentDiv) {
-                console.error('❌ Content div not found:', `${containerId}-content`);
+        // For token-by-token streaming, use requestAnimationFrame to ensure each token gets its own frame
+        // This prevents batching and ensures smooth word-by-word appearance
+        // Simple token queue for ChatGPT-like animated typing effect
+        const tokenQueues = new Map(); // containerId -> array of tokens
+        
+        // Track if processor is running for each container
+        const processorRunning = new Map(); // containerId -> boolean
+        
+        function appendTokenWithAnimation(containerId, token) {
+            // Initialize queue for this container if needed
+            if (!tokenQueues.has(containerId)) {
+                tokenQueues.set(containerId, []);
+            }
+            
+            // Add token to queue
+            tokenQueues.get(containerId).push(token);
+            
+            // Start or restart processor if not running
+            if (!processorRunning.get(containerId)) {
+                processorRunning.set(containerId, true);
+                processTokenQueue(containerId);
+            }
+        }
+        
+        function processTokenQueue(containerId) {
+            const queue = tokenQueues.get(containerId);
+            
+            if (!queue || queue.length === 0) {
+                // Queue empty - mark processor as stopped so it can be restarted
+                processorRunning.set(containerId, false);
                 return;
             }
             
-            // Show content div as soon as we have content
-            contentDiv.classList.remove('hidden');
-            console.log('✅ Content div is now visible');
-            
-            // Update content incrementally
-            const contentElement = contentDiv.querySelector('.text-sm');
-            if (contentElement) {
-                // Format the content for display
-                let formattedContent = escapeHtml(content)
-                    .replace(/\n/g, '<br>')
-                    .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-800 rounded p-2 my-2 overflow-x-auto"><code>$2</code></pre>');
-                
-                // Check if we should animate (if content is significantly longer than what's already displayed)
-                const currentLength = contentElement.textContent?.length || 0;
-                const newLength = content.length;
-                
-                if (newLength > currentLength + 50) {
-                    // Large jump - animate the new content
-                    animateTextAppearance(contentElement, formattedContent, currentLength);
-                } else {
-                    // Small update - just set it directly
-                    contentElement.innerHTML = formattedContent;
-                }
-                
-                console.log('✅ Content updated in DOM, length:', formattedContent.length);
-            } else {
-                console.error('❌ Content element (.text-sm) not found in content div');
+            // Get the content element
+            const contentDiv = document.getElementById(`${containerId}-content`);
+            if (!contentDiv) {
+                // Element doesn't exist yet, retry in a bit
+                setTimeout(() => processTokenQueue(containerId), 30);
+                return;
             }
             
-            // Remove "Starting..." placeholder if present
+            // Show content div
+            contentDiv.classList.remove('hidden');
+            
+            const contentElement = contentDiv.querySelector('.text-sm');
+            if (!contentElement) {
+                setTimeout(() => processTokenQueue(containerId), 30);
+                return;
+            }
+            
+            // Remove "Starting..." placeholder on first token
             const eventsContainer = document.getElementById(`${containerId}-events`);
             if (eventsContainer) {
                 const placeholder = eventsContainer.querySelector('.animate-spin')?.parentElement;
-                if (placeholder) {
-                    placeholder.remove();
-                    console.log('✅ Removed "Starting..." placeholder');
-                }
+                if (placeholder) placeholder.remove();
             }
             
+            // Process one token from queue
+            const token = queue.shift();
+            
+            // Format and append the token
+            const formattedToken = escapeHtml(token).replace(/\n/g, '<br>');
+            contentElement.innerHTML += formattedToken;
+            
             scrollToBottom();
+            
+            // Process next token after a small delay (20ms for visible typing effect)
+            setTimeout(() => {
+                processTokenQueue(containerId);
+            }, 20);
         }
         
         function animateTextAppearance(element, fullContent, startLength) {
@@ -696,19 +723,22 @@
         }
         
         function finalizeStreamingContainer(containerId, content, events) {
+            // Wait for token queue to finish processing before finalizing
+            const queue = tokenQueues.get(containerId);
+            if (queue && queue.length > 0) {
+                // Still processing tokens, wait and retry
+                setTimeout(() => finalizeStreamingContainer(containerId, content, events), 50);
+                return;
+            }
+            
             const container = document.getElementById(containerId);
             if (!container) return;
             
             const contentDiv = document.getElementById(`${containerId}-content`);
-            if (contentDiv && content) {
-                // Ensure content is visible (might already be visible from real-time updates)
+            // DON'T overwrite innerHTML - tokens were already added via streaming
+            // Just ensure content div is visible
+            if (contentDiv) {
                 contentDiv.classList.remove('hidden');
-                const contentElement = contentDiv.querySelector('.text-sm');
-                if (contentElement) {
-                    contentElement.innerHTML = escapeHtml(content)
-                        .replace(/\n/g, '<br>')
-                        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-800 rounded p-2 my-2 overflow-x-auto"><code>$2</code></pre>');
-                }
             }
             
             // Add timestamp and feedback buttons
@@ -716,44 +746,55 @@
             const messageIndex = state.messages.length;
             
             // Store the message in state
+            const messageId = `debug_msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             state.messages.push({
                 role: 'assistant',
                 content: content,
                 timestamp: timestamp,
                 feedback: null,
-                events: events
+                events: events,
+                message_id: messageId
             });
             
-            // Add timestamp and controls
-            const wrapper = container.querySelector('.bg-gray-700');
+            // Add timestamp and controls to existing streaming container
+            const wrapper = container.querySelector('.bg-gray-100, .bg-gray-700');
             if (wrapper) {
-                const controlsHtml = `
-                    <p class="text-xs text-gray-500 mt-3">${timestamp}</p>
-                `;
-                wrapper.insertAdjacentHTML('beforeend', controlsHtml);
+                // Check if timestamp already exists
+                if (!wrapper.querySelector('.text-xs.text-gray-500.mt-3')) {
+                    const controlsHtml = `
+                        <p class="text-xs text-gray-500 mt-3">${timestamp}</p>
+                    `;
+                    wrapper.insertAdjacentHTML('beforeend', controlsHtml);
+                }
                 
-                // Add feedback buttons after the message bubble
-                const feedbackHtml = `
-                    <div class="flex items-center gap-2 mt-2 ml-11">
-                        <button onclick="sendFeedback(${messageIndex}, 'up')" class="feedback-btn p-1 rounded text-gray-500 hover:text-green-400 hover:bg-green-500/10 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
-                            </svg>
-                        </button>
-                        <button onclick="sendFeedback(${messageIndex}, 'down')" class="feedback-btn p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/>
-                            </svg>
-                        </button>
-                        <button onclick="copyMessage(${messageIndex})" class="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-600/50 transition-all" title="Copy">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
-                        </button>
-                    </div>
-                `;
-                container.querySelector('.max-w-2xl').insertAdjacentHTML('beforeend', feedbackHtml);
+                // Add feedback buttons after the message bubble (if not already present)
+                const maxWidthDiv = container.querySelector('.max-w-2xl');
+                if (maxWidthDiv && !maxWidthDiv.querySelector('.feedback-btn')) {
+                    const feedbackHtml = `
+                        <div class="flex items-center gap-2 mt-2 ml-11">
+                            <button onclick="sendFeedback(${messageIndex}, 'up')" class="feedback-btn p-1 rounded text-gray-500 hover:text-green-400 hover:bg-green-500/10 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                                </svg>
+                            </button>
+                            <button onclick="sendFeedback(${messageIndex}, 'down')" class="feedback-btn p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/>
+                                </svg>
+                            </button>
+                            <button onclick="copyMessage(${messageIndex})" class="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-600/50 transition-all" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    maxWidthDiv.insertAdjacentHTML('beforeend', feedbackHtml);
+                }
             }
+            
+            // DON'T call renderMessages() - it would replace the streaming container
+            // The streaming container already has the content displayed token-by-token
         }
         
         async function sendFeedback(messageIndex, feedback) {
@@ -762,6 +803,11 @@
             const msg = state.messages[messageIndex];
             const prevMsg = messageIndex > 0 ? state.messages[messageIndex - 1] : null;
             
+            // Generate message_id if not present
+            if (!msg.message_id) {
+                msg.message_id = `debug_msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            }
+            
             try {
                 await fetch('/api/debug/feedback', {
                     method: 'POST',
@@ -769,6 +815,7 @@
                     body: JSON.stringify({
                         session_id: state.sessionId || 'unknown',
                         message_index: messageIndex,
+                        message_id: msg.message_id,
                         feedback: feedback,
                         agent_name: state.currentAgent,
                         user_message: prevMsg?.role === 'user' ? prevMsg.content : '',
@@ -1071,7 +1118,8 @@
         
         function addMessage(role, content, rawData = null, logs = []) {
             const timestamp = new Date().toLocaleTimeString();
-            state.messages.push({ role, content, timestamp, feedback: null, rawData, logs });
+            const messageId = `debug_msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            state.messages.push({ role, content, timestamp, feedback: null, rawData, logs, message_id: messageId });
             renderMessages();
             scrollToBottom();
         }

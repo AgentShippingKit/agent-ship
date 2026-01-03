@@ -16,7 +16,7 @@ Models provide:
 Core Models
 -----------
 
-.. automodule:: src.models.base_models
+.. automodule:: src.service.models.base_models
    :members:
    :undoc-members:
    :show-inheritance:
@@ -28,7 +28,7 @@ Simple text-based input/output for basic agents:
 
 .. code-block:: python
 
-   from src.models.base_models import TextInput, TextOutput
+   from src.service.models.base_models import TextInput, TextOutput
    
    input_data = TextInput(text="Hello!")
    # Used for simple text-based interactions
@@ -119,7 +119,7 @@ Creating a Request
 
 .. code-block:: python
 
-   from src.models.base_models import AgentChatRequest, FeatureMap
+   from src.service.models.base_models import AgentChatRequest, FeatureMap
    
    request = AgentChatRequest(
        agent_name="my_agent",

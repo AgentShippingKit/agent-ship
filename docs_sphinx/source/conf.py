@@ -54,8 +54,8 @@ html_theme = 'furo'
 html_static_path = ['_static']
 
 # Branding
-html_logo = '_static/logo-icon.svg'
-html_favicon = '_static/favicon-32.svg'
+html_logo = '_static/logo-icon.png'
+html_favicon = '_static/favicon-32.png'
 
 # Custom CSS to hide right sidebar
 html_css_files = ['custom.css']

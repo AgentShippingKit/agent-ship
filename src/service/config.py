@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     # Agent Discovery Configuration
     # Comma-separated list of directories to discover agents from
     # Default: all agents (for development/testing)
-    # For open-source: set to "src/agents/all_agents/orchestrator_pattern,src/agents/all_agents/single_agent_pattern,src/agents/all_agents/tool_pattern"
+    # For open-source: set to "src/all_agents/orchestrator_pattern,src/all_agents/single_agent_pattern,src/all_agents/tool_pattern"
     AGENT_DIRECTORIES: str = os.getenv(
         "AGENT_DIRECTORIES", 
-        "src/agents/all_agents"
+        "src/all_agents"
     )
     
     @property
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     def agent_directories(self) -> List[str]:
         """Get list of agent directories from configuration."""
         if not self.AGENT_DIRECTORIES:
-            return ["src/agents/all_agents"]
+            return ["src/all_agents"]
         
         # Split by comma and strip whitespace
         directories = [d.strip() for d in self.AGENT_DIRECTORIES.split(",")]

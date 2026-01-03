@@ -20,7 +20,7 @@ All agents in AgentShip inherit from ``BaseAgent``, which provides the core func
 Class Definition
 ----------------
 
-.. automodule:: src.agents.base_agent
+.. automodule:: src.agent_framework.core.base_agent
    :members:
    :undoc-members:
    :show-inheritance:
@@ -29,8 +29,8 @@ Class Definition
 Key Methods
 -----------
 
-``__init__(agent_config, input_schema, output_schema)``
-   Initialize the agent with configuration and schemas.
+``__init__(_caller_file, input_schema, output_schema)``
+   Initialize the agent with caller file path and schemas. Config is auto-loaded from the YAML file adjacent to the caller.
 
 ``async chat(request: AgentChatRequest) -> AgentChatResponse``
    Main method for chatting with the agent. Handles session management and response formatting.
@@ -43,18 +43,14 @@ Usage Example
 
 .. code-block:: python
 
-   from src.agents.all_agents.base_agent import BaseAgent
-   from src.agents.configs.agent_config import AgentConfig
-   from src.models.base_models import TextInput, TextOutput
+   from src.all_agents.base_agent import BaseAgent
+   from src.service.models.base_models import TextInput, TextOutput
    
-   # Load configuration
-   config = AgentConfig.from_yaml("my_agent.yaml")
-   
-   # Create agent
+   # Create agent — config auto-loads from main_agent.yaml
    class MyAgent(BaseAgent):
        def __init__(self):
            super().__init__(
-               agent_config=config,
+               _caller_file=__file__,
                input_schema=TextInput,
                output_schema=TextOutput
            )

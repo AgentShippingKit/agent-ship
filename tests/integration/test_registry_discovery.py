@@ -1,6 +1,6 @@
 import pathlib
 
-from src.agents.registry import discover_agents, list_agents, clear_cache
+from src.agent_framework.registry import discover_agents, list_agents, clear_cache
 
 
 def _get_project_root():
@@ -16,7 +16,7 @@ def _get_project_root():
 def test_discover_agents_registers_expected_names():
     """Light integration: discovery populates the global registry.
 
-    We call `discover_agents` against the real `src/agents/all_agents` tree
+    We call `discover_agents` against the real `src/all_agents` tree
     and assert that a few known agents are present.
     
     Note: discovery uses relative paths from the project root to convert
@@ -32,7 +32,7 @@ def test_discover_agents_registers_expected_names():
         os.chdir(str(project_root))
         
         # Use relative path - discovery expects paths relative to project root
-        agents_root = "src/agents/all_agents"
+        agents_root = "src/all_agents"
         
         # Ensure registry is clean before and after
         clear_cache()
@@ -48,14 +48,13 @@ def test_discover_agents_registers_expected_names():
             f"Make sure the directory exists and contains agent Python files."
         )
         
-        # Check for expected agents (at least one should be present)
-        # We check for common patterns that should exist
+        # Check for expected open-source agents (at least one should be present)
         expected_patterns = [
-            "trip_planner",  # TripPlannerAgent
-            "translation",  # TranslationAgent
-            "medical_followup",  # MedicalFollowupAgent
-            "medical_conversation_insights",  # MedicalConversationInsightsAgent
-            "health_assistant",  # HealthAssistantAgent
+            "trip_planner",  # TripPlannerAgent (orchestrator)
+            "translation",  # TranslationAgent (single-agent)
+            "file_analysis",  # FileAnalysisAgent
+            "personal_assistant",  # PersonalAssistantAgent
+            "database",  # DatabaseAgent (tool pattern)
         ]
         
         found_any = any(pattern in names for pattern in expected_patterns)

@@ -19,19 +19,20 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyo
+*.pyd
 
 # Virtual environments
 venv/
 ENV/
 env/
-.venv
+.venv/
+.virtualenvs/
 
 # Environment variables
 .env
-.env.local
-.env.prod
-.env.bak
-.env.*.local
+.env.*
+!env.example
 
 # IDE
 .vscode/
@@ -40,45 +41,59 @@ env/
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
 # Logs
 *.log
-dev_app.log
-opik.log
 logs/
 
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
+.nox/
 .hypothesis/
 
-# MkDocs (removed - using Sphinx only)
-# site/
-# .cache/
-
-# Sphinx
+# Sphinx docs
 docs_sphinx/build/
 docs_sphinx/source/_build/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
-# mypy
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Pyre type checker
 .pyre/
+.pytype/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
 
-# Temporary files
+# Temporary / backup files
 *.tmp
 *.bak
-*.swp
+*.orig
+*.rej
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Docker
+docker-compose.override.yml
+
+# Alternative package manager files (using Pipenv for Heroku)
+/requirements.txt
+uv.lock
+
+# Profiling
+*.prof
+*.lprof

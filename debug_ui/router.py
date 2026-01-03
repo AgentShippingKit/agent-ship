@@ -12,7 +12,9 @@ Provides endpoints for:
 import io
 import json
 import logging
+import os
 import uuid
+import httpx
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -22,8 +24,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from src.agents.registry import list_agents, get_agent_instance, get_agent_class
-from src.models.base_models import AgentChatRequest, FeatureMap
+from src.agent_framework.registry import list_agents, get_agent_instance, get_agent_class
+from src.service.models.base_models import AgentChatRequest, FeatureMap
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -127,6 +129,7 @@ class FeedbackRequest(BaseModel):
     """Request to save feedback."""
     session_id: str
     message_index: int
+    message_id: Optional[str] = None  # Optional message_id (for backend API)
     feedback: str  # "up" or "down"
     agent_name: str
     user_message: str
@@ -472,23 +475,108 @@ async def debug_chat_stream(request: DebugChatRequest):
 
 @router.post("/feedback")
 async def save_feedback(request: FeedbackRequest):
-    """Save feedback for a message."""
+    """
+    Save feedback for a message.
+    
+    This endpoint proxies feedback to the backend API for persistent storage.
+    If backend is not available, falls back to in-memory storage for debug purposes.
+    """
     try:
+        # Generate message_id if not provided (for debug UI)
+        message_id = request.message_id or f"debug_msg_{uuid.uuid4().hex[:12]}"
+        
+        # Map feedback values: "up" -> "helpful", "down" -> "not_helpful"
+        feedback_value = "helpful" if request.feedback == "up" else "not_helpful"
+        
+        # Send feedback to AI ecosystem feedback endpoint (same service)
+        # This stores feedback in the same database as agent sessions
+        try:
+            # Directly use the database model instead of HTTP call (same service)
+            from src.service.models.ai_feedback import (
+                FeedbackRequest as FeedbackRequestModel,
+                FeedbackType,
+                get_db,
+                AIFeedback,
+                engine
+            )
+            from sqlalchemy.orm import Session
+            
+            if not engine:
+                raise ValueError("Database not configured for feedback storage.")
+
+            # Create feedback request model
+            feedback_request_model = FeedbackRequestModel(
+                message_id=message_id,
+                session_id=request.session_id,
+                user_id="debug_user",  # Use a placeholder user_id for debug UI
+                agent_name=request.agent_name,
+                input_message=request.user_message,
+                output_message=request.assistant_message,
+                feedback=feedback_value
+            )
+            
+            # Get database session and save feedback
+            db = next(get_db())
+            try:
+                # Check if feedback already exists
+                existing_feedback = db.query(AIFeedback).filter(
+                    AIFeedback.message_id == message_id
+                ).first()
+                
+                if existing_feedback:
+                    existing_feedback.feedback = FeedbackType(feedback_value)
+                    existing_feedback.input_message = request.user_message
+                    existing_feedback.output_message = request.assistant_message
+                    existing_feedback.agent_name = request.agent_name
+                    db.commit()
+                    feedback_id = str(existing_feedback.feedback_id)
+                else:
+                    # Create new feedback
+                    feedback = AIFeedback(
+                        message_id=message_id,
+                        session_id=request.session_id,
+                        user_id="debug_user",
+                        agent_name=request.agent_name,
+                        input_message=request.user_message,
+                        output_message=request.assistant_message,
+                        feedback=FeedbackType(feedback_value)
+                    )
+                    db.add(feedback)
+                    db.commit()
+                    db.refresh(feedback)
+                    feedback_id = str(feedback.feedback_id)
+                
+                logger.info(f"Feedback saved to AI ecosystem database: {feedback_value} for {request.agent_name}")
+                return {
+                    "success": True,
+                    "id": feedback_id,
+                    "saved_to_database": True
+                }
+            finally:
+                db.close()
+                
+        except Exception as db_error:
+            logger.warning(f"Failed to save feedback to database: {db_error}. Using in-memory storage.")
+            # Fall through to in-memory storage
+        
+        # Fallback to in-memory storage (for debug purposes if database fails)
         feedback_entry = {
-            "id": str(uuid.uuid4()),
+            "id": message_id,
             "timestamp": datetime.now().isoformat(),
             "session_id": request.session_id,
             "message_index": request.message_index,
+            "message_id": message_id,
             "feedback": request.feedback,
             "agent_name": request.agent_name,
             "user_message": request.user_message,
-            "assistant_message": request.assistant_message
+            "assistant_message": request.assistant_message,
+            "saved_to_database": False
         }
         
         _feedback_store.append(feedback_entry)
-        logger.info(f"Feedback saved: {request.feedback} for {request.agent_name}")
+        logger.info(f"Feedback saved to in-memory store: {request.feedback} for {request.agent_name}")
         
-        return {"success": True, "id": feedback_entry["id"]}
+        return {"success": True, "id": feedback_entry["id"], "saved_to_database": False}
         
     except Exception as e:
         logger.exception("Failed to save feedback")

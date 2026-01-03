@@ -135,8 +135,8 @@ Create Your First Agent
 
 .. code-block:: bash
 
-   mkdir -p src/agents/all_agents/my_agent
-   cd src/agents/all_agents/my_agent
+   mkdir -p src/all_agents/my_agent
+   cd src/all_agents/my_agent
 
 2. Create ``main_agent.yaml``:
 
@@ -155,17 +155,13 @@ Create Your First Agent
 
 .. code-block:: python
 
-   from src.agents.all_agents.base_agent import BaseAgent
-   from src.models.base_models import TextInput, TextOutput
-   from src.agents.utils.path_utils import resolve_config_path
-   from src.agents.configs.agent_config import AgentConfig
+   from src.all_agents.base_agent import BaseAgent
+   from src.service.models.base_models import TextInput, TextOutput
 
    class MyAgent(BaseAgent):
        def __init__(self):
-           config_path = resolve_config_path(relative_to=__file__)
-           agent_config = AgentConfig.from_yaml(config_path)
            super().__init__(
-               agent_config=agent_config,
+               _caller_file=__file__,
                input_schema=TextInput,
                output_schema=TextOutput
            )
@@ -200,7 +196,7 @@ Each agent lives in its own directory:
 
 .. code-block:: text
 
-   src/agents/all_agents/
+   src/all_agents/
    └── my_agent/
        ├── main_agent.yaml    # Agent configuration
        └── main_agent.py       # Agent implementation

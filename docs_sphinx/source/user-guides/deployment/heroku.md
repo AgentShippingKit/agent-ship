@@ -31,7 +31,7 @@ heroku addons:create heroku-postgresql:mini
 
 ```bash
 heroku config:set OPENAI_API_KEY=your_key
-heroku config:set SESSION_STORE_URI=$(heroku config:get DATABASE_URL)
+heroku config:set AGENT_SESSION_STORE_URI=$(heroku config:get DATABASE_URL)
 ```
 
 ### 4. Deploy

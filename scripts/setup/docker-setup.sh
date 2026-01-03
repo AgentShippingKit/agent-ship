@@ -39,8 +39,8 @@ if [ ! -f ".env" ]; then
     cp env.example .env
     
     # Update database URI for Docker
-    sed -i.bak 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env 2>/dev/null || \
-    sed -i '' 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env
+    sed -i.bak 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env 2>/dev/null || \
+    sed -i '' 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env
     
     # Prompt for API key
     echo ""
@@ -72,8 +72,8 @@ else
     print_info ".env file exists"
     # Update database URI if needed
     if grep -q "SESSION_STORE_URI=postgresql://.*localhost" .env; then
-        sed -i.bak 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env 2>/dev/null || \
-        sed -i '' 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env
+        sed -i.bak 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env 2>/dev/null || \
+        sed -i '' 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env
     fi
 fi
 
@@ -82,6 +82,18 @@ fi
 if ! docker compose version &> /dev/null 2>&1; then
     COMPOSE_CMD="docker-compose"
 fi
+
+# Check that the Docker daemon is healthy before proceeding
+print_info "Checking Docker daemon..."
+if ! docker info &>/dev/null; then
+    echo ""
+    print_warning "Docker daemon is not responding."
+    echo "  → Quit Docker Desktop completely and start it again."
+    echo "  → Then run: make docker-setup"
+    echo ""
+    exit 1
+fi
+print_success "Docker daemon OK"
 
 # Build and start
 echo ""

@@ -95,7 +95,7 @@ def profile_startup():
     
     # Snapshot 4: After agent registry
     print("[3/7] Importing agent registry...")
-    from src.agents.registry import AgentRegistry
+    from src.agent_framework.registry import AgentRegistry
     registry = AgentRegistry()
     
     snapshot4 = tracemalloc.take_snapshot()
@@ -104,7 +104,7 @@ def profile_startup():
     
     # Snapshot 5: After agent discovery
     print("[4/7] Discovering agents...")
-    from src.agents.registry import discover_agents
+    from src.agent_framework.registry import discover_agents
     discover_agents()
     
     snapshot5 = tracemalloc.take_snapshot()

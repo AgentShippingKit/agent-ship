@@ -1,35 +1,62 @@
 Modules
 =======
 
-Session Manager
----------------
-
-.. automodule:: src.agents.modules.session_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Agent Configurator
+Session Management
 ------------------
 
-.. automodule:: src.agents.modules.agent_configurator
+.. automodule:: src.agent_framework.session.base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Response Parser
+Agent Registry & Discovery
+--------------------------
+
+.. automodule:: src.agent_framework.registry.discovery
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: src.agent_framework.registry.core
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Configuration
+-------------
+
+.. automodule:: src.agent_framework.configs.agent_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: src.agent_framework.configs.loader
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Tool Management
 ---------------
 
-.. automodule:: src.agents.modules.response_parser
+.. automodule:: src.agent_framework.tools.tool_manager
    :members:
    :undoc-members:
    :show-inheritance:
 
-Session Service Factory
------------------------
+Factories
+---------
 
-.. automodule:: src.agents.modules.session_service_factory
+.. automodule:: src.agent_framework.factories.engine_factory
    :members:
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: src.agent_framework.factories.memory_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: src.agent_framework.factories.tool_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:

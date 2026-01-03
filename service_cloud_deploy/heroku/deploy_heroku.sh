@@ -10,6 +10,7 @@ echo "🚀 Deploying AgentShip to Heroku..."
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Function to print colored output
@@ -23,6 +24,10 @@ print_warning() {
 
 print_error() {
     echo -e "${RED}❌ $1${NC}"
+}
+
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 # Check if Heroku CLI is installed
@@ -130,9 +135,20 @@ if [ ! -d ".git" ]; then
     git commit -m "Initial commit for Heroku deployment"
 fi
 
-# Get app name - use ai-agents-alpha
-APP_NAME="ai-agents-alpha"
-print_status "Using Heroku app: $APP_NAME"
+# Get app name from .env or use default
+APP_NAME=$(get_env_value "APP_NAME")
+if [ -z "$APP_NAME" ]; then
+    APP_NAME="agent-ship-demo"
+    print_warning "APP_NAME not set in .env, using default: $APP_NAME"
+else
+    print_status "Using Heroku app from .env: $APP_NAME"
+fi
+
+# Get session store name from .env (optional)
+SESSION_STORE_NAME=$(get_env_value "SESSION_STORE_NAME")
+if [ -n "$SESSION_STORE_NAME" ]; then
+    print_status "Using session store name from .env: $SESSION_STORE_NAME"
+fi
 
 # Check if the app exists and we have access to it
 if heroku apps:info --app "$APP_NAME" &> /dev/null; then
@@ -164,62 +180,86 @@ heroku buildpacks:set heroku/python --app "$APP_NAME" || print_warning "Buildpac
 
 # Set up PostgreSQL if it doesn't exist
 print_status "Checking PostgreSQL addon..."
+POSTGRES_CREATED=false
 if ! heroku addons:info postgresql --app "$APP_NAME" &> /dev/null; then
-    print_info "PostgreSQL addon not found. Setting it up..."
+    print_warning "PostgreSQL addon not found. Setting it up..."
     if [ -f "agent_store_deploy/setup_heroku_postgres.sh" ]; then
         chmod +x agent_store_deploy/setup_heroku_postgres.sh
-        APP_NAME="$APP_NAME" ./agent_store_deploy/setup_heroku_postgres.sh
-        print_success "PostgreSQL addon created"
+        APP_NAME="$APP_NAME" SESSION_STORE_NAME="$SESSION_STORE_NAME" ./agent_store_deploy/setup_heroku_postgres.sh
+        print_status "PostgreSQL addon created"
+        POSTGRES_CREATED=true
     else
         print_warning "PostgreSQL setup script not found. Creating addon manually..."
-        heroku addons:create heroku-postgresql:essential-0 --app "$APP_NAME" || print_warning "Failed to create PostgreSQL addon"
+        if [ -n "$SESSION_STORE_NAME" ]; then
+            heroku addons:create heroku-postgresql:essential-0 --app "$APP_NAME" --name "$SESSION_STORE_NAME" && POSTGRES_CREATED=true
+        else
+            heroku addons:create heroku-postgresql:essential-0 --app "$APP_NAME" && POSTGRES_CREATED=true
+        fi
+        if [ "$POSTGRES_CREATED" = true ]; then
+            print_status "PostgreSQL addon created"
+        else
+            print_warning "Failed to create PostgreSQL addon"
+        fi
     fi
 else
-    print_success "PostgreSQL addon already exists"
+    print_status "PostgreSQL addon already exists"
+fi
+
+# Wait for PostgreSQL to be ready if we just created it
+if [ "$POSTGRES_CREATED" = true ]; then
+    print_status "Waiting for PostgreSQL addon to be ready..."
+    heroku pg:wait --app "$APP_NAME" || sleep 30
+    print_status "PostgreSQL addon is ready"
+fi
+
+# Fetch PostgreSQL URL and update .env BEFORE pushing env vars to Heroku
+print_status "Fetching PostgreSQL URL from Heroku..."
+if heroku addons:info postgresql --app "$APP_NAME" &> /dev/null; then
+    DATABASE_URL=$(heroku config:get DATABASE_URL --app "$APP_NAME")
+    if [ -n "$DATABASE_URL" ]; then
+        print_status "Got DATABASE_URL from Heroku PostgreSQL addon"
+        
+        # Update .env file with the PostgreSQL URL first
+        if grep -q "^AGENT_SESSION_STORE_URI=" .env; then
+            # Replace existing value
+            sed -i.bak "s|^AGENT_SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=$DATABASE_URL|" .env && rm -f .env.bak
+            print_status "Updated AGENT_SESSION_STORE_URI in .env file"
+        else
+            # Add new entry
+            echo "AGENT_SESSION_STORE_URI=$DATABASE_URL" >> .env
+            print_status "Added AGENT_SESSION_STORE_URI to .env file"
+        fi
+    else
+        print_warning "DATABASE_URL not found. PostgreSQL addon may not be ready yet."
+    fi
+else
+    print_warning "PostgreSQL addon not found. AGENT_SESSION_STORE_URI will not be set automatically."
 fi
 
 # Clear build cache to ensure fresh install
 print_status "Clearing build cache..."
 heroku builds:cache:purge --app "$APP_NAME" || print_warning "Cache purge failed or not needed"
 
-# Check if environment variables are set
-print_status "Checking environment variables..."
+# Push environment variables to Heroku (now with correct AGENT_SESSION_STORE_URI)
+print_status "Setting environment variables in Heroku..."
 
-# Read from .env file and set in Heroku (all keys)
 if [ -f ".env" ]; then
-    print_status "Setting environment variables from .env file..."
+    print_status "Pushing environment variables from .env file to Heroku..."
     while IFS='=' read -r key value; do
         # Skip comments and empty lines
         if [[ ! $key =~ ^# ]] && [[ -n $key ]] && [[ -n $value ]]; then
-            # Remove quotes from value
-            clean_value=$(echo "$value" | sed 's/^"//;s/"$//;s/^'"'"'//;s/'"'"'$//')
-            echo "Setting $key..."
-            if heroku config:set "$key=$clean_value" --app "$APP_NAME"; then
-                print_status "Successfully set $key"
+            # Remove quotes and trim whitespace from value
+            clean_value=$(echo "$value" | sed 's/^"//;s/"$//;s/^'"'"'//;s/'"'"'$//;s/^[[:space:]]*//;s/[[:space:]]*$//')
+            # Also trim whitespace from key
+            clean_key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            echo "Setting $clean_key..."
+            if heroku config:set "$clean_key=$clean_value" --app "$APP_NAME"; then
+                print_status "Successfully set $clean_key"
             else
-                print_warning "Failed to set $key (this might be expected for some variables)"
+                print_warning "Failed to set $clean_key (this might be expected for some variables)"
             fi
         fi
     done < .env
-fi
-
-# Set SESSION_STORE_URI from PostgreSQL addon
-print_status "Setting SESSION_STORE_URI from PostgreSQL addon..."
-if heroku addons:info postgresql --app "$APP_NAME" &> /dev/null; then
-    # Get the DATABASE_URL from the PostgreSQL addon
-    DATABASE_URL=$(heroku config:get DATABASE_URL --app "$APP_NAME")
-    if [ -n "$DATABASE_URL" ]; then
-        # Set SESSION_STORE_URI to the same value as DATABASE_URL
-        if heroku config:set SESSION_STORE_URI="$DATABASE_URL" --app "$APP_NAME"; then
-            print_status "SESSION_STORE_URI set from PostgreSQL addon"
-        else
-            print_warning "Failed to set SESSION_STORE_URI"
-        fi
-    else
-        print_warning "DATABASE_URL not found. PostgreSQL addon may not be ready yet."
-    fi
-else
-    print_warning "PostgreSQL addon not found. SESSION_STORE_URI will not be set automatically."
 fi
 
 # Deploy to Heroku

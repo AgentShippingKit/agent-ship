@@ -104,8 +104,8 @@ docker compose build          # Rebuild images
    - Hot-reload: Source code is mounted for development
 
 2. **postgres** (Database)
-   - Port: `5432` (exposed for local access)
-   - Database: `ai_agents_store`
+   - Port: `5433` (exposed on host; container uses 5432 internally)
+   - Database: `ai_agents_session_store`
    - User: `ai_agents_user`
    - Password: `ai_agents_password`
    - Data persistence: Volume `postgres_data`
@@ -121,7 +121,7 @@ GOOGLE_API_KEY=your-key
 ANTHROPIC_API_KEY=your-key
 
 # Database (automatically configured for Docker)
-AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store
+AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store
 ```
 
 **Note:** The database connection string uses `postgres` as the hostname (Docker service name), not `localhost`.
@@ -145,7 +145,7 @@ make docker-up
 
 ### Port already in use
 
-If port 7001 or 5432 is already in use, change ports in `docker-compose.yml`:
+If port 7001 or 5433 is already in use, change ports in `docker-compose.yml`:
 
 ```yaml
 ports:

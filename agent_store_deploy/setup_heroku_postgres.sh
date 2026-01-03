@@ -34,12 +34,18 @@ print_info() {
 # Default app name - can be overridden
 APP_NAME="${APP_NAME:-ai-agents-alpha}"
 POSTGRES_PLAN="${POSTGRES_PLAN:-essential-0}"
+SESSION_STORE_NAME="${SESSION_STORE_NAME:-}"
 
 # Display configuration being used
 echo ""
 print_info "Using the following Heroku configuration:"
 echo "  App Name: $APP_NAME"
 echo "  PostgreSQL Plan: $POSTGRES_PLAN"
+if [ -n "$SESSION_STORE_NAME" ]; then
+    echo "  Session Store Name: $SESSION_STORE_NAME"
+else
+    echo "  Session Store Name: (auto-generated)"
+fi
 echo ""
 print_info "To override these values, set the environment variables before running this script."
 echo "  Example: APP_NAME=my-app POSTGRES_PLAN=standard-0 ./setup_heroku_postgres.sh"
@@ -93,18 +99,30 @@ if heroku addons:info heroku-postgresql --app "$APP_NAME" &> /dev/null; then
         echo "   heroku addons:upgrade heroku-postgresql:$POSTGRES_PLAN --app $APP_NAME"
     fi
 else
-    print_info "Adding PostgreSQL addon ($POSTGRES_PLAN tier) with database name 'ai_agents_session_store'..."
-    if heroku addons:create heroku-postgresql:$POSTGRES_PLAN --app "$APP_NAME" --name ai-agents-session-store; then
-        print_status "PostgreSQL addon added successfully"
-        
-        # Wait a moment for the addon to be ready
-        print_info "Waiting for PostgreSQL addon to be ready..."
-        sleep 15
+    print_info "Adding PostgreSQL addon ($POSTGRES_PLAN tier)..."
+    if [ -n "$SESSION_STORE_NAME" ]; then
+        # Use custom session store name if provided
+        if heroku addons:create heroku-postgresql:$POSTGRES_PLAN --app "$APP_NAME" --name "$SESSION_STORE_NAME"; then
+            print_status "PostgreSQL addon added successfully with name: $SESSION_STORE_NAME"
+        else
+            print_error "Failed to add PostgreSQL addon with name '$SESSION_STORE_NAME'. The name might already be taken."
+            print_info "Try leaving SESSION_STORE_NAME empty for auto-generated name, or choose a unique name."
+            exit 1
+        fi
     else
-        print_error "Failed to add PostgreSQL addon. You may need to add it manually:"
-        echo "   heroku addons:create heroku-postgresql:$POSTGRES_PLAN --app $APP_NAME --name ai-agents-session-store"
-        exit 1
+        # Let Heroku auto-generate the name
+        if heroku addons:create heroku-postgresql:$POSTGRES_PLAN --app "$APP_NAME"; then
+            print_status "PostgreSQL addon added successfully"
+        else
+            print_error "Failed to add PostgreSQL addon. You may need to add it manually:"
+            echo "   heroku addons:create heroku-postgresql:$POSTGRES_PLAN --app $APP_NAME"
+            exit 1
+        fi
     fi
+    
+    # Wait for the addon to be ready
+    print_info "Waiting for PostgreSQL addon to be ready..."
+    heroku pg:wait --app "$APP_NAME" || sleep 30
 fi
 
 # Get the DATABASE_URL from the PostgreSQL addon
@@ -128,14 +146,14 @@ if [ -n "$DATABASE_URL" ]; then
     
     print_info "Database name: $DB_NAME"
     
-    # Use the DATABASE_URL as SESSION_STORE_URI (it already has the correct database name)
-    SESSION_STORE_URI="$DATABASE_URL"
+    # Use the DATABASE_URL as AGENT_SESSION_STORE_URI
+    AGENT_SESSION_STORE_URI="$DATABASE_URL"
     
-    print_status "Setting SESSION_STORE_URI with ai_agents_session_store database..."
-    if heroku config:set SESSION_STORE_URI="$SESSION_STORE_URI" --app "$APP_NAME"; then
-        print_status "SESSION_STORE_URI set with ai_agents_session_store database"
+    print_status "Setting AGENT_SESSION_STORE_URI..."
+    if heroku config:set AGENT_SESSION_STORE_URI="$AGENT_SESSION_STORE_URI" --app "$APP_NAME"; then
+        print_status "AGENT_SESSION_STORE_URI set successfully"
     else
-        print_error "Failed to set SESSION_STORE_URI"
+        print_error "Failed to set AGENT_SESSION_STORE_URI"
         exit 1
     fi
 else
@@ -147,11 +165,11 @@ fi
 
 # Verify the setup
 print_status "Verifying PostgreSQL setup..."
-if heroku config:get SESSION_STORE_URI --app "$APP_NAME" &> /dev/null; then
-    SESSION_STORE_URI=$(heroku config:get SESSION_STORE_URI --app "$APP_NAME")
-    print_status "SESSION_STORE_URI is set: ${SESSION_STORE_URI:0:50}..."
+if heroku config:get AGENT_SESSION_STORE_URI --app "$APP_NAME" &> /dev/null; then
+    AGENT_SESSION_STORE_URI=$(heroku config:get AGENT_SESSION_STORE_URI --app "$APP_NAME")
+    print_status "AGENT_SESSION_STORE_URI is set: ${AGENT_SESSION_STORE_URI:0:50}..."
 else
-    print_error "SESSION_STORE_URI is not set"
+    print_error "AGENT_SESSION_STORE_URI is not set"
     exit 1
 fi
 
@@ -166,9 +184,9 @@ try:
     import psycopg2
     from urllib.parse import urlparse
     
-    session_store_uri = os.getenv('SESSION_STORE_URI')
+    session_store_uri = os.getenv('AGENT_SESSION_STORE_URI')
     if not session_store_uri:
-        print("❌ SESSION_STORE_URI not set")
+        print("❌ AGENT_SESSION_STORE_URI not set")
         sys.exit(1)
     
     # Parse the URI
@@ -193,8 +211,8 @@ except Exception as e:
     sys.exit(1)
 EOF
     
-    # Run the test with the SESSION_STORE_URI
-    if SESSION_STORE_URI="$SESSION_STORE_URI" python3 /tmp/test_db_connection.py; then
+    # Run the test with the AGENT_SESSION_STORE_URI
+    if AGENT_SESSION_STORE_URI="$AGENT_SESSION_STORE_URI" python3 /tmp/test_db_connection.py; then
         print_status "Database connectivity test passed"
     else
         print_warning "Database connectivity test failed, but setup may still be valid"
@@ -212,7 +230,7 @@ echo ""
 echo "📊 Configuration Summary:"
 echo "  App Name: $APP_NAME"
 echo "  PostgreSQL Plan: $POSTGRES_PLAN"
-echo "  SESSION_STORE_URI: ${SESSION_STORE_URI:0:50}..."
+echo "  AGENT_SESSION_STORE_URI: ${AGENT_SESSION_STORE_URI:0:50}..."
 echo ""
 echo "🔧 Useful Commands:"
 echo "  View config: heroku config --app $APP_NAME"
@@ -228,4 +246,4 @@ echo ""
 echo "💡 To use this storage in your code:"
 echo "  from google.adk.sessions import DatabaseSessionService"
 echo "  import os"
-echo "  session_service = DatabaseSessionService(os.getenv('SESSION_STORE_URI'))"
+echo "  session_service = DatabaseSessionService(os.getenv('AGENT_SESSION_STORE_URI'))"

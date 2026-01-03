@@ -3,7 +3,7 @@
 .. raw:: html
 
    <div style="text-align: center; margin: 2rem 0;">
-       <img src="/docs/_static/docs-header.svg" alt="AgentShip Documentation" style="width: 100%; max-width: 960px;" />
+       <img src="/docs/_static/docs-header@3x.png" alt="AgentShip Documentation" style="width: 100%; max-width: 960px;" />
    </div>
 
 Welcome to AgentShip's documentation!
@@ -25,6 +25,27 @@ AgentShip is a comprehensive framework that simplifies the development, deployme
 - **Session management**: Persistent conversations with PostgreSQL or in-memory storage
 - **Observability**: Built-in tracing, metrics, and logging with Opik
 
+Architecture
+============
+
+AgentShip's architecture is designed for production-scale AI agent deployment:
+
+.. image:: _static/Architecture.png
+   :alt: AgentShip System Architecture
+   :align: center
+   :width: 100%
+
+The system includes:
+
+- **FastAPI Entrypoint**: HTTP, SSE, and WebSocket support for various communication protocols
+- **Main Ecosystem**: YAML-based agent configurations, LLM sidecar, observability, and guardrails
+- **LLM Tooling Layer**: Utils, tools, and MCP (Model Context Protocol) integration
+- **Memory Layer**: Session memory stores, external context stores, caching, and file storage
+- **Data Ingestion Pipeline**: Processes data from various sources into the memory layer
+- **Observability**: OPIK & Langfuse integration for monitoring, evaluation, and prompt versioning
+- **LLM Providers**: Support for GPT, Gemini, Ollama, and Claude
+- **Testing**: Debug UI, Postman collections, and unit tests
+
 Quick Start
 ===========
 
@@ -43,7 +64,7 @@ The setup script will:
 - Create `.env` file
 - Prompt for your API key
 - Start everything (API + PostgreSQL)
-- Open the API documentation
+- Show URLs for API documentation
 
 .. toctree::
    :maxdepth: 2

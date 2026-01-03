@@ -5,14 +5,13 @@ The `BaseAgent` class is the foundation for all agents in the framework. It hand
 ## Usage
 
 ```python
-from src.agents.all_agents.base_agent import BaseAgent
-from src.models.base_models import TextInput, TextOutput
-from src.agents.utils.path_utils import resolve_config_path
+from src.all_agents.base_agent import BaseAgent
+from src.service.models.base_models import TextInput, TextOutput
 
 class MyAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            config_path=resolve_config_path(relative_to=__file__),
+            _caller_file=__file__,
             input_schema=TextInput,
             output_schema=TextOutput
         )

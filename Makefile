@@ -66,7 +66,7 @@ docker-reload: ## Hard reload (rebuilds image with docs, restarts everything)
 	@echo "🔄 Hard reloading AgentShip (rebuilding image + docs, restarting containers)..."
 	@echo "📚 Everything will be available at http://localhost:7001 after restart"
 	@docker compose down || docker-compose down
-	@docker compose build || docker-compose build
+	@docker compose build --no-cache || docker-compose build --no-cache
 	@docker compose up -d || docker-compose up -d
 
 docker-logs: ## View Docker logs

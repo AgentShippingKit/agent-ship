@@ -55,7 +55,7 @@ What AgentShip Provides
    .. code-block:: bash
 
       # Just create these files:
-      src/agents/all_agents/my_agent/
+      src/all_agents/my_agent/
       ├── main_agent.yaml
       └── main_agent.py
       

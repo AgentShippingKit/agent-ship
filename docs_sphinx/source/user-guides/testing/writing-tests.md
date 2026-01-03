@@ -19,8 +19,8 @@ tests/
 ```python
 import pytest
 from unittest.mock import Mock
-from src.agents.all_agents.my_agent.main_agent import MyAgent
-from src.models.base_models import AgentChatRequest
+from src.all_agents.my_agent.main_agent import MyAgent
+from src.service.models.base_models import AgentChatRequest
 
 @pytest.fixture
 def agent():

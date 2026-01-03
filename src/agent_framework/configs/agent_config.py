@@ -1,0 +1,176 @@
+from enum import Enum
+
+from src.agent_framework.configs.llm.llm_provider_config import (
+    LLMModel,
+    LLMProviderName,
+    LLMProviderConfig,
+)
+from src.agent_framework.configs.memory_config import MemoryConfig, MemoryBackend
+from typing import List, Any, Dict, Optional, Union
+import yaml
+import os
+
+
+class ExecutionEngine(Enum):
+    """Execution engine for running agents.
+    
+    Attributes:
+        ADK: Google ADK (Agent Development Kit) - default
+        LANGGRAPH: LangGraph framework with LiteLLM
+    """
+    ADK = "adk"
+    LANGGRAPH = "langgraph"
+
+
+class StreamingMode(Enum):
+    """Streaming mode configuration for agent responses.
+    
+    Attributes:
+        NONE: No streaming, only final result returned
+        EVENT_BASED: Chunk/event-based streaming (default)
+        TOKEN_BASED: True token-level streaming (LangGraph only)
+    """
+    NONE = "none"
+    EVENT_BASED = "event_based"
+    TOKEN_BASED = "token_based"
+
+
+class AgentConfig:
+    """
+    Agent configuration for all agents.
+    This configuration is used to configure the agent.
+    It is also used to validate that the model belongs to the correct provider.
+    It is also used to load the agent configuration from a YAML file.
+    It is also used to print the agent configuration.
+    It is also used to get the agent configuration from a YAML file.
+    """
+
+    def __init__(
+        self,
+        llm_provider_name: LLMProviderName,
+        llm_model: LLMModel = LLMModel.GPT_4O_MINI,
+        temperature: float = 0.4,
+        execution_engine: Union[ExecutionEngine, str] = ExecutionEngine.ADK,
+        agent_name: str = "",
+        description: str = "",
+        instruction_template: str = "",
+        tags: List[str] = [],
+        tools: List[Dict[str, Any]] | None = None,
+        memory: Optional[MemoryConfig] = None,
+        streaming_mode: Union[StreamingMode, str] = StreamingMode.NONE,
+    ):
+        self.model_provider = LLMProviderConfig.get_llm_provider(llm_provider_name)
+        self.model = llm_model
+        self.temperature = temperature
+        
+        # Execution engine - convert string to enum if needed
+        if isinstance(execution_engine, str):
+            try:
+                execution_engine = ExecutionEngine(execution_engine)
+            except ValueError:
+                valid_engines = [e.value for e in ExecutionEngine]
+                raise ValueError(
+                    f"execution_engine must be one of {valid_engines}, got '{execution_engine}'"
+                )
+        self.execution_engine: ExecutionEngine = execution_engine
+        
+        self.agent_name = agent_name
+        self.description = description
+        self.tags = tags
+        self.instruction_template = instruction_template
+
+        # Optional tool configuration loaded from YAML.
+        # Each entry is a dict describing how to construct a tool for this agent.
+        # The BaseAgent class is responsible for interpreting this structure.
+        self.tools: List[Dict[str, Any]] = tools or []
+
+        # Memory configuration (session and persistence memory)
+        # If not provided, defaults to memory disabled
+        self.memory: MemoryConfig = memory or MemoryConfig(enabled=False)
+        
+        # Streaming mode configuration - convert string to enum if needed
+        if isinstance(streaming_mode, str):
+            try:
+                streaming_mode = StreamingMode(streaming_mode)
+            except ValueError:
+                valid_modes = [m.value for m in StreamingMode]
+                raise ValueError(
+                    f"streaming_mode must be one of {valid_modes}, got '{streaming_mode}'"
+                )
+        self.streaming_mode: StreamingMode = streaming_mode
+        
+        # Validate memory backend compatibility with runtime
+        if self.memory.enabled and self.memory.backend == MemoryBackend.VERTEXAI:
+            if self.execution_engine != ExecutionEngine.ADK:
+                raise ValueError(
+                    f"VertexAI memory backend requires execution_engine='adk', "
+                    f"but got '{self.execution_engine.value}'"
+                )
+
+        # Observability is configured purely via environment per Opik guide
+
+        # Validate that the model belongs to the correct provider
+        if self.model not in self.model_provider.models:
+            available_models = [llm_model.value for llm_model in self.model_provider.models]
+            raise ValueError(
+                f"Model '{self.model.value}' is not compatible with provider '{self.model_provider.name.value}'. "
+                f"Available models for {self.model_provider.name.value}: {available_models}"
+            )
+
+    @classmethod
+    def from_yaml(cls, file_path: str) -> 'AgentConfig':
+        """
+        Load agent configuration from a YAML file.
+        
+        Args:
+            file_path: Path to YAML file. Can be absolute or relative.
+                      For relative paths, use resolve_config_path() utility.
+                      Convention: YAML filename should match the Python filename.
+                      Example: main_agent.py → main_agent.yaml
+        
+        Returns:
+            AgentConfig instance loaded from YAML file
+        
+        Raises:
+            FileNotFoundError: If config file doesn't exist
+        """
+        # Resolve to absolute path if relative
+        if not os.path.isabs(file_path):
+            # If relative, resolve from current working directory
+            file_path = os.path.abspath(file_path)
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Agent config file not found: {file_path}")
+        
+        with open(file_path, "r") as file:
+            config = yaml.safe_load(file)
+
+        # Parse memory configuration from YAML
+        memory_config = None
+        if "memory" in config:
+            # Convert dict to MemoryConfig Pydantic model
+            memory_config = MemoryConfig(**config["memory"])
+
+        return cls(
+            llm_provider_name=LLMProviderName(config["llm_provider_name"]),
+            llm_model=LLMModel(config["llm_model"]),
+            temperature=config["temperature"],
+            execution_engine=(
+                config.get("execution_engine")
+                or config.get("execution_backend")
+                or config.get("runtime")
+                or ExecutionEngine.ADK.value
+            ),
+            agent_name=config["agent_name"],
+            description=config["description"],
+            instruction_template=config["instruction_template"],
+            tags=config.get("tags", []),
+            tools=config.get("tools", []) or [],
+            memory=memory_config,
+            streaming_mode=config.get("streaming_mode", StreamingMode.NONE.value),
+        )
+
+    def __str__(self):
+        return f"AgentConfig(model_provider={self.model_provider.name.value}, model={self.model.value}, \
+            temperature={self.temperature}, agent_name={self.agent_name}, description={self.description}, \
+            instruction_template={self.instruction_template}, memory_enabled={self.memory.enabled})"

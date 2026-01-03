@@ -12,10 +12,10 @@ GOOGLE_API_KEY=your_google_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
-**Database** (required for session management):
+**Database** (optional, for persistent session management):
 
 ```bash
-SESSION_STORE_URI=postgresql://user:password@host:port/database
+AGENT_SESSION_STORE_URI=postgresql://user:password@host:port/database
 ```
 
 ### Optional
@@ -32,10 +32,10 @@ OPIK_PROJECT_NAME=your_project
 
 ```bash
 # Defaults to all agents
-AGENT_DIRECTORIES=src/agents/all_agents
+AGENT_DIRECTORIES=src/all_agents
 
-# For open-source only agents:
-AGENT_DIRECTORIES=src/agents/all_agents/orchestrator_pattern,src/agents/all_agents/single_agent_pattern
+# For specific agent patterns only:
+AGENT_DIRECTORIES=src/all_agents/orchestrator_pattern,src/all_agents/single_agent_pattern
 ```
 
 **Logging**:

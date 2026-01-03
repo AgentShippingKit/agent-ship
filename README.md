@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./branding/github-banner.svg" alt="AgentShip" width="100%">
+  <img src="branding/banners/github-banner@3x.png" alt="AgentShip" width="100%">
 </p>
 
 <p align="center">
@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  AgentShip is the <strong>production layer</strong> for AI agents. Built on Google ADK, it provides everything you need to ship agents to production: REST API, session management, observability, and one-command deployment.
+  AgentShip is the <strong>production layer</strong> for AI agents. Built on Google ADK and LangGraph, it provides everything you need to ship agents to production: REST API, session management, observability, streaming, and one-command deployment.
 </p>
 
 <p align="center">
@@ -64,12 +64,30 @@ make docker-logs    # View logs
 
 ---
 
+## 🏗️ Architecture
+
+AgentShip's architecture is designed for production-scale AI agent deployment:
+
+<p align="center">
+  <img src="branding/Architecture.png" alt="AgentShip Architecture" width="100%">
+</p>
+
+The system includes:
+- **FastAPI Entrypoint**: HTTP, SSE, and WebSocket support
+- **Main Ecosystem**: YAML-based agent configurations, LLM sidecar, observability, and guardrails
+- **LLM Tooling Layer**: Utils, tools, and MCP integration
+- **Memory Layer**: Session memory, external context stores, caching, and file storage
+- **Data Ingestion Pipeline**: Processes data from various sources
+- **Observability**: OPIK & Langfuse integration for monitoring and evaluation
+
+---
+
 ## 📝 Create Your First Agent
 
 ```bash
 # 1. Create directory
-mkdir -p src/agents/all_agents/my_agent
-cd src/agents/all_agents/my_agent
+mkdir -p src/agent_framework/all_agents/my_agent
+cd src/agent_framework/all_agents/my_agent
 
 # 2. Create main_agent.yaml
 cat > main_agent.yaml << EOF
@@ -84,9 +102,9 @@ EOF
 
 # 3. Create main_agent.py
 cat > main_agent.py << EOF
-from src.agents.all_agents.base_agent import BaseAgent
-from src.models.base_models import TextInput, TextOutput
-from src.agents.utils.path_utils import resolve_config_path
+from src.agent_framework.all_agents.base_agent import BaseAgent
+from src.service.models.base_models import TextInput, TextOutput
+from src.agent_framework.utils.path_utils import resolve_config_path
 
 class MyAgent(BaseAgent):
     def __init__(self):
@@ -152,7 +170,7 @@ AgentShip uses PostgreSQL for session storage. Different environments use differ
 
 | Environment | Command | Database | Access |
 |---|---|---|---|
-| **Docker** | `make docker-up` | Docker PostgreSQL (`ai_agents_store`) | `postgres:5432` (inside containers) |
+| **Docker** | `make docker-up` | Docker PostgreSQL (`ai_agents_session_store`) | `postgres:5432` (inside containers), `localhost:5433` (external) |
 | **Local** | `make dev` | Local PostgreSQL (`ai_agents_session_store`) | `localhost:5432` |
 | **Heroku** | Auto-provisioned | Heroku PostgreSQL | `DATABASE_URL` env var |
 

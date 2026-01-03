@@ -1,0 +1,36 @@
+agent_name: trip_planner_agent
+tags: [trip, planner]
+llm_provider_name: openai
+llm_model: gpt-4o
+temperature: 0.4
+execution_engine: adk
+streaming_mode: event_based
+description: Plans a trip to a destination
+instruction_template: |
+  You are a trip planner expert. You are able to plan a trip to a destination.
+  - Use the FlightAgent to get the flight plan. output of the flight agent is the flight plan of the trip.
+  - Use the HotelAgent to get the hotel plan. output of the hotel agent is the hotel plan of the trip.
+  - Use the SummarizerAgent to get the trip summary. Do not create summary by yourself. output of the summarizer agent is the summary of the trip.
+
+  You will receive input in the following format:
+  - source: The source of the trip.
+  - destination: The destination of the trip.
+
+  Your output should be a JSON object matching the TripPlannerOutput model.
+
+  TripPlannerOutput model:
+  - flight_plan: str // comes from FlightAgent
+  - hotel_plan: str // comes from HotelAgent
+  - summary: str // comes from SummaryAgent
+
+tools:
+  # Order matters: flight, then hotel, then summary.
+  - type: agent
+    id: flight_planner
+    agent_class: src.all_agents.orchestrator_pattern.sub_agents.flight_agent.FlightPlannerAgent
+  - type: agent
+    id: hotel_planner
+    agent_class: src.all_agents.orchestrator_pattern.sub_agents.hotel_agent.HotelPlannerAgent
+  - type: agent
+    id: trip_summary
+    agent_class: src.all_agents.orchestrator_pattern.sub_agents.trip_summary_agent.TripSummaryAgent

@@ -17,7 +17,15 @@ logging.getLogger("httpx").setLevel(logging.CRITICAL)
 def disable_observability(monkeypatch):
     """Disable Opik observability during tests to speed them up."""
     # Mock the create_observer function to return None
-    monkeypatch.setattr("src.agents.core.observability.create_observer", lambda config: None)
+    monkeypatch.setattr("src.agent_framework.factories.observability_factory.ObservabilityFactory.create_observer", lambda agent_config: None)
+
+
+# Use in-memory sessions for tests to avoid database dependency
+@pytest.fixture(autouse=True)
+def use_in_memory_sessions(monkeypatch):
+    """Force in-memory sessions for tests to avoid database setup."""
+    # Override environment variables to use in-memory sessions
+    monkeypatch.setenv("AGENT_SHORT_TERM_MEMORY", "InMemory")
 
 
 @pytest.fixture
