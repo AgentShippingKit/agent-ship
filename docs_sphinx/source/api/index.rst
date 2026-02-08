@@ -101,7 +101,7 @@ Basic Agent Chat
 
 .. code-block:: python
 
-   from src.models.base_models import AgentChatRequest
+   from src.service.models.base_models import AgentChatRequest
    
    request = AgentChatRequest(
        agent_name="my_agent",
@@ -118,9 +118,9 @@ Creating an Agent
 
 .. code-block:: python
 
-   from src.agents.all_agents.base_agent import BaseAgent
-   from src.agents.configs.agent_config import AgentConfig
-   from src.models.base_models import TextInput, TextOutput
+   from src.all_agents.base_agent import BaseAgent
+   from src.agent_framework.configs.agent_config import AgentConfig
+   from src.service.models.base_models import TextInput, TextOutput
    
    config = AgentConfig.from_yaml("path/to/config.yaml")
    agent = MyAgent(

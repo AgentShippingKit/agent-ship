@@ -32,10 +32,10 @@ OPIK_PROJECT_NAME=your_project
 
 ```bash
 # Defaults to all agents
-AGENT_DIRECTORIES=src/agents/all_agents
+AGENT_DIRECTORIES=src/agent_framework/all_agents
 
 # For open-source only agents:
-AGENT_DIRECTORIES=src/agents/all_agents/orchestrator_pattern,src/agents/all_agents/single_agent_pattern
+AGENT_DIRECTORIES=src/agent_framework/all_agents/orchestrator_pattern,src/agent_framework/all_agents/single_agent_pattern
 ```
 
 **Logging**:

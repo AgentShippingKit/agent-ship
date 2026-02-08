@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from dotenv import load_dotenv
-from src.agents.registry import discover_agents
+from src.agent_framework.registry import discover_agents
 from src.service.routers.rest_router import router as rest_router
 from debug_ui.router import router as debug_router
 load_dotenv()

@@ -105,7 +105,7 @@ docker compose build          # Rebuild images
 
 2. **postgres** (Database)
    - Port: `5432` (exposed for local access)
-   - Database: `ai_agents_store`
+   - Database: `ai_agents_session_store`
    - User: `ai_agents_user`
    - Password: `ai_agents_password`
    - Data persistence: Volume `postgres_data`
@@ -121,7 +121,7 @@ GOOGLE_API_KEY=your-key
 ANTHROPIC_API_KEY=your-key
 
 # Database (automatically configured for Docker)
-AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store
+AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store
 ```
 
 **Note:** The database connection string uses `postgres` as the hostname (Docker service name), not `localhost`.

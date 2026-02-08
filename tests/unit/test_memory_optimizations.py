@@ -11,7 +11,7 @@ class TestLazyImports:
     def test_azure_imports_lazy(self):
         """Test that Azure imports are not loaded at module level."""
         # Import the module
-        from src.agents.utils import azure_utils
+        from src.agent_framework.utils import azure_utils
         
         # Check that Azure libraries are not imported yet (if they were, they'd be in sys.modules)
         # Note: This might fail if Azure was imported elsewhere, but that's okay
@@ -37,7 +37,7 @@ class TestLazyImports:
     
     def test_azure_utils_handles_missing_libraries(self):
         """Test that AzureUtils handles missing Azure libraries gracefully."""
-        from src.agents.utils import azure_utils
+        from src.agent_framework.utils import azure_utils
         
         utils = azure_utils.AzureUtils()
         

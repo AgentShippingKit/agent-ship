@@ -4,7 +4,7 @@ Modules
 Session Manager
 ---------------
 
-.. automodule:: src.agents.modules.session_manager
+.. automodule:: src.agent_framework.modules.session_manager
    :members:
    :undoc-members:
    :show-inheritance:
@@ -12,7 +12,7 @@ Session Manager
 Agent Configurator
 ------------------
 
-.. automodule:: src.agents.modules.agent_configurator
+.. automodule:: src.agent_framework.modules.agent_configurator
    :members:
    :undoc-members:
    :show-inheritance:
@@ -20,7 +20,7 @@ Agent Configurator
 Response Parser
 ---------------
 
-.. automodule:: src.agents.modules.response_parser
+.. automodule:: src.agent_framework.modules.response_parser
    :members:
    :undoc-members:
    :show-inheritance:
@@ -28,7 +28,7 @@ Response Parser
 Session Service Factory
 -----------------------
 
-.. automodule:: src.agents.modules.session_service_factory
+.. automodule:: src.agent_framework.modules.session_service_factory
    :members:
    :undoc-members:
    :show-inheritance:

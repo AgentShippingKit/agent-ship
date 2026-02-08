@@ -10,7 +10,7 @@ Function tools import any Python class and method as a tool:
 tools:
   - type: function
     id: my_tool
-    import: src.agents.tools.my_tool.MyTool
+    import: src.agent_framework.tools.my_tool.MyTool
     method: run
 ```
 
@@ -22,7 +22,7 @@ Agent tools use other agents as tools, enabling agent composition:
 tools:
   - type: agent
     id: sub_agent
-    agent_class: src.agents.all_agents.sub_agent.SubAgent
+    agent_class: src.all_agents.sub_agent.SubAgent
 ```
 
 ## Tool Ordering

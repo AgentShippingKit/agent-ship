@@ -31,7 +31,7 @@ Agent configuration is defined in YAML files (typically ``main_agent.yaml``):
 Class Definition
 ----------------
 
-.. automodule:: src.agents.configs.agent_config
+.. automodule:: src.agent_framework.configs.agent_config
    :members:
    :undoc-members:
    :show-inheritance:
@@ -58,7 +58,7 @@ Usage Example
 
 .. code-block:: python
 
-   from src.agents.configs.agent_config import AgentConfig
+   from src.agent_framework.configs.agent_config import AgentConfig
    
    # Load from YAML
    config = AgentConfig.from_yaml("my_agent.yaml")

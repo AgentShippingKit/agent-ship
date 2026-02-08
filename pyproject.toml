@@ -72,6 +72,9 @@ dependencies = [
     "proto-plus>=1.23.4",
     "shapely>=2.0.6",
     "graphviz>=0.20.3",
+    "langgraph",
+    "langgraph-checkpoint-postgres",
+    "langchain-core",
     
     # MCP (Model Control Plane)
     "mcp>=1.14.1",

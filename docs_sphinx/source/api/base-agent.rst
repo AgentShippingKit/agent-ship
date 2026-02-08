@@ -20,7 +20,7 @@ All agents in AgentShip inherit from ``BaseAgent``, which provides the core func
 Class Definition
 ----------------
 
-.. automodule:: src.agents.base_agent
+.. automodule:: src.agent_framework.base_agent
    :members:
    :undoc-members:
    :show-inheritance:
@@ -43,9 +43,9 @@ Usage Example
 
 .. code-block:: python
 
-   from src.agents.all_agents.base_agent import BaseAgent
-   from src.agents.configs.agent_config import AgentConfig
-   from src.models.base_models import TextInput, TextOutput
+   from src.all_agents.base_agent import BaseAgent
+   from src.agent_framework.configs.agent_config import AgentConfig
+   from src.service.models.base_models import TextInput, TextOutput
    
    # Load configuration
    config = AgentConfig.from_yaml("my_agent.yaml")

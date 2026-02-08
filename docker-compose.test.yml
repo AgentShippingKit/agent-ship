@@ -18,7 +18,7 @@ services:
     environment:
       - ENVIRONMENT=test
       - LOG_LEVEL=INFO
-      - AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store
+      - AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store
     # Memory limit matching Heroku eco dyno (512MB)
     mem_limit: 512m
     mem_reservation: 256m
@@ -45,7 +45,7 @@ services:
     image: postgres:16-alpine
     container_name: agentship-test-postgres
     environment:
-      POSTGRES_DB: ai_agents_store
+      POSTGRES_DB: ai_agents_session_store
       POSTGRES_USER: ai_agents_user
       POSTGRES_PASSWORD: ai_agents_password
     ports:
@@ -53,7 +53,7 @@ services:
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ai_agents_user -d ai_agents_store"]
+      test: ["CMD-SHELL", "pg_isready -U ai_agents_user -d ai_agents_session_store"]
       interval: 5s
       timeout: 3s
       retries: 5

@@ -5,8 +5,8 @@ The tool pattern enables agents with comprehensive tooling capabilities.
 ## Example: Database Agent
 
 ```python
-from src.agents.all_agents.base_agent import BaseAgent
-from src.agents.utils.path_utils import resolve_config_path
+from src.all_agents.base_agent import BaseAgent
+from src.agent_framework.utils.path_utils import resolve_config_path
 
 class DatabaseAgent(BaseAgent):
     def __init__(self):
@@ -25,7 +25,7 @@ description: Natural language database queries
 tools:
   - type: function
     id: database_tool
-    import: src.agents.tools.database_tool.DatabaseTool
+    import: src.agent_framework.tools.database_tool.DatabaseTool
     method: run
 ```
 

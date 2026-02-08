@@ -39,8 +39,8 @@ if [ ! -f ".env" ]; then
     cp env.example .env
     
     # Update database URI for Docker
-    sed -i.bak 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env 2>/dev/null || \
-    sed -i '' 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env
+    sed -i.bak 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env 2>/dev/null || \
+    sed -i '' 's|SESSION_STORE_URI=.*|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env
     
     # Prompt for API key
     echo ""
@@ -72,8 +72,8 @@ else
     print_info ".env file exists"
     # Update database URI if needed
     if grep -q "SESSION_STORE_URI=postgresql://.*localhost" .env; then
-        sed -i.bak 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env 2>/dev/null || \
-        sed -i '' 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_store|' .env
+        sed -i.bak 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env 2>/dev/null || \
+        sed -i '' 's|SESSION_STORE_URI=.*localhost|AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store|' .env
     fi
 fi
 

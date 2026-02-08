@@ -117,6 +117,17 @@ LOGGING_CONFIG = {
             "handlers": ["console", "file"],
             "propagate": False,
         },
+        # Suppress LiteLLM LoggingWorker event loop errors (non-critical)
+        "litellm.litellm_core_utils.logging_worker": {
+            "level": "ERROR",  # Only show errors, suppress warnings about event loops
+            "handlers": ["console", "file"],
+            "propagate": False,
+        },
+        "base_events": {
+            "level": "ERROR",  # Suppress "Task exception was never retrieved" warnings from LiteLLM
+            "handlers": ["console", "file"],
+            "propagate": False,
+        },
         "httpx": {
             "level": config.LOG_LEVEL,
             "handlers": ["console", "file"],
@@ -141,5 +152,36 @@ def configure_logging():
             heroku_config['loggers'][logger_name]['handlers'] = ['console']
         logging.config.dictConfig(heroku_config)
     else:
-        # Local environment - use both console and file
-        logging.config.dictConfig(LOGGING_CONFIG)
+        # Local environment - try to use both console and file, fallback to console-only if file fails
+        log_file_path = config.LOG_FILE_PATH
+        
+        # Check if we can create the log file
+        can_use_file = True
+        try:
+            # Ensure log file directory exists for absolute paths
+            if os.path.isabs(log_file_path):
+                log_dir = os.path.dirname(log_file_path)
+                if log_dir and not os.path.exists(log_dir):
+                    os.makedirs(log_dir, exist_ok=True)
+            
+            # Try to open the file to see if we can write to it
+            # Use 'a' mode to append (won't fail if file exists) and ensure we close it
+            with open(log_file_path, 'a'):
+                pass
+        except (OSError, PermissionError, IOError) as e:
+            # Can't create/write to log file, skip file handler
+            can_use_file = False
+            import warnings
+            warnings.warn(f"Unable to create log file '{log_file_path}': {e}. Using console-only logging.", UserWarning)
+        
+        if can_use_file:
+            # Use both console and file logging
+            logging.config.dictConfig(LOGGING_CONFIG)
+        else:
+            # Fallback to console-only logging
+            fallback_config = LOGGING_CONFIG.copy()
+            fallback_config['handlers'] = {'console': fallback_config['handlers']['console']}
+            fallback_config['root']['handlers'] = ['console']
+            for logger_name in fallback_config['loggers']:
+                fallback_config['loggers'][logger_name]['handlers'] = ['console']
+            logging.config.dictConfig(fallback_config)

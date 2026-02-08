@@ -32,7 +32,7 @@ print_info() {
 }
 
 # Database configuration - can be overridden by environment variables
-DB_NAME="${DB_NAME:-ai_agents_store}"
+DB_NAME="${DB_NAME:-ai_agents_session_store}"
 DB_USER="${DB_USER:-ai_agents_user}"
 DB_PASSWORD="${DB_PASSWORD:-ai_agents_password}"
 DB_HOST="${DB_HOST:-localhost}"

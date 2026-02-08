@@ -82,3 +82,8 @@ dmypy.json
 *.tmp
 *.bak
 *.swp
+
+# Alternative package manager files (using Pipenv for Heroku)
+# Keep these locally but don't commit to avoid Heroku conflicts
+requirements.txt
+uv.lock

@@ -5,9 +5,9 @@ The single agent pattern is for standalone agents that handle focused tasks inde
 ## Example: Translation Agent
 
 ```python
-from src.agents.all_agents.base_agent import BaseAgent
-from src.models.base_models import AgentChatRequest, TextInput, TextOutput
-from src.agents.utils.path_utils import resolve_config_path
+from src.all_agents.base_agent import BaseAgent
+from src.service.models.base_models import AgentChatRequest, TextInput, TextOutput
+from src.agent_framework.utils.path_utils import resolve_config_path
 
 class TranslationAgent(BaseAgent):
     def __init__(self):
