@@ -43,11 +43,6 @@ env/
 .DS_Store
 Thumbs.db
 
-# Cursor
-.cursor/
-.cursorignore
-.cursorindexingignore
-
 # Logs
 *.log
 logs/
@@ -96,7 +91,7 @@ dmypy.json
 docker-compose.override.yml
 
 # Alternative package manager files (using Pipenv for Heroku)
-requirements.txt
+/requirements.txt
 uv.lock
 
 # Profiling
