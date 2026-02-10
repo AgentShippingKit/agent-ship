@@ -16,7 +16,7 @@ Models provide:
 Core Models
 -----------
 
-.. automodule:: src.models.base_models
+.. automodule:: src.service.models.base_models
    :members:
    :undoc-members:
    :show-inheritance:

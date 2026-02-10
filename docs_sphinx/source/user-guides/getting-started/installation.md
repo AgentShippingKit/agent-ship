@@ -55,8 +55,8 @@ OPENAI_API_KEY=your_openai_api_key
 GOOGLE_API_KEY=your_google_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
-# Optional: Database for session management
-SESSION_STORE_URI=postgresql://user:password@host:port/database
+# Optional: Database for persistent session management
+AGENT_SESSION_STORE_URI=postgresql://user:password@host:port/database
 
 # Optional: Observability
 OPIK_API_KEY=your_opik_api_key
@@ -161,7 +161,7 @@ pipenv install --dev
 
 - Sessions persisted to PostgreSQL
 - Survive service restarts
-- Set `SESSION_STORE_URI` in `.env`
+- Set `AGENT_SESSION_STORE_URI` in `.env`
 
 ## Next Steps
 

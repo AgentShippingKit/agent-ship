@@ -64,7 +64,7 @@ The setup script will:
 - Create `.env` file
 - Prompt for your API key
 - Start everything (API + PostgreSQL)
-- Open the API documentation
+- Show URLs for API documentation
 
 .. toctree::
    :maxdepth: 2

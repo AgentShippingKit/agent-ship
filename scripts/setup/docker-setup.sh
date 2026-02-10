@@ -83,6 +83,18 @@ if ! docker compose version &> /dev/null 2>&1; then
     COMPOSE_CMD="docker-compose"
 fi
 
+# Check that the Docker daemon is healthy before proceeding
+print_info "Checking Docker daemon..."
+if ! docker info &>/dev/null; then
+    echo ""
+    print_warning "Docker daemon is not responding."
+    echo "  → Quit Docker Desktop completely and start it again."
+    echo "  → Then run: make docker-setup"
+    echo ""
+    exit 1
+fi
+print_success "Docker daemon OK"
+
 # Build and start
 echo ""
 print_header "🚀 Starting AgentShip"

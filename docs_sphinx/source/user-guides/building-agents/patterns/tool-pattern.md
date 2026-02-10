@@ -6,12 +6,11 @@ The tool pattern enables agents with comprehensive tooling capabilities.
 
 ```python
 from src.all_agents.base_agent import BaseAgent
-from src.agent_framework.utils.path_utils import resolve_config_path
 
 class DatabaseAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            config_path=resolve_config_path(relative_to=__file__)
+            _caller_file=__file__,
         )
 ```
 

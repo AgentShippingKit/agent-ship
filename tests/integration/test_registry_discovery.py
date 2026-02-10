@@ -49,7 +49,6 @@ def test_discover_agents_registers_expected_names():
         )
         
         # Check for expected open-source agents (at least one should be present)
-        # Open-source branch excludes HealthLogue-specific agents
         expected_patterns = [
             "trip_planner",  # TripPlannerAgent (orchestrator)
             "translation",  # TranslationAgent (single-agent)

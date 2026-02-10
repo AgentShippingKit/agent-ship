@@ -6,13 +6,11 @@ The orchestrator pattern coordinates multiple sub-agents to complete complex tas
 
 ```python
 from src.all_agents.base_agent import BaseAgent
-from src.agent_framework.utils.path_utils import resolve_config_path
 
 class TripPlannerAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            config_path=resolve_config_path(relative_to=__file__),
-            agent_type=AgentType.SEQUENTIAL_AGENT
+            _caller_file=__file__,
         )
 ```
 

@@ -43,8 +43,8 @@ make docker-up
 ### Create the directory
 
 ```bash
-mkdir -p src/agent_framework/all_agents/my_agent
-cd src/agent_framework/all_agents/my_agent
+mkdir -p src/all_agents/my_agent
+cd src/all_agents/my_agent
 ```
 
 ### Add configuration (`main_agent.yaml`)
@@ -64,12 +64,11 @@ instruction_template: |
 ```python
 from src.all_agents.base_agent import BaseAgent
 from src.service.models.base_models import TextInput, TextOutput
-from src.agent_framework.utils.path_utils import resolve_config_path
 
 class MyAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            config_path=resolve_config_path(relative_to=__file__),
+            _caller_file=__file__,
             input_schema=TextInput,
             output_schema=TextOutput
         )
