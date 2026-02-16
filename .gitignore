@@ -29,10 +29,18 @@ env/
 .venv/
 .virtualenvs/
 
-# Environment variables
+# Environment variables (never commit secrets)
 .env
 .env.*
+!.env.example
 !env.example
+
+# Local-only history/rewrite scripts (do not publish)
+scripts/changelog_commits/
+scripts/changelog_messages.sh
+scripts/rewrite_history.sh
+scripts/rewrite_history_changelog.sh
+scripts/reword_13_to_changelog.sh
 
 # IDE
 .vscode/
