@@ -14,7 +14,7 @@ services:
       - ENVIRONMENT=docker
       - LOG_LEVEL=INFO
       # Override localhost -> postgres for Docker networking
-      - AGENT_SESSION_STORE_URI=postgresql://ai_agents_user:ai_agents_password@postgres:5432/ai_agents_session_store
+      - AGENT_SESSION_STORE_URI=postgresql://agentship_user:agentship_password@postgres:5432/agentship_session_store
       - AGENT_SHORT_TERM_MEMORY=Database
       # Backend API runs on host machine (localhost:5001), use host.docker.internal to reach it from container
       - BACKEND_URL=http://host.docker.internal:5001
@@ -45,15 +45,15 @@ services:
     image: postgres:16-alpine
     container_name: agentship-postgres
     environment:
-      POSTGRES_DB: ai_agents_session_store
-      POSTGRES_USER: ai_agents_user
-      POSTGRES_PASSWORD: ai_agents_password
+      POSTGRES_DB: agentship_session_store
+      POSTGRES_USER: agentship_user
+      POSTGRES_PASSWORD: agentship_password
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ai_agents_user -d ai_agents_session_store"]
+      test: ["CMD-SHELL", "pg_isready -U agentship_user -d agentship_session_store"]
       interval: 10s
       timeout: 5s
       retries: 5
