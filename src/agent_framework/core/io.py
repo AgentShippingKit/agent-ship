@@ -46,23 +46,69 @@ def create_input_from_request(input_schema: Type[BaseModel], request: AgentChatR
 
 def build_schema_prompt(output_schema: Type[BaseModel]) -> str:
     """Build a system prompt addition that enforces the output schema.
-    
+
     Args:
         output_schema: The Pydantic model to generate schema for.
-        
+
     Returns:
-        String containing the schema instruction and JSON example.
+        String containing clear schema instructions with example format.
     """
     try:
-        # Generate JSON schema
-        schema_json = json.dumps(output_schema.model_json_schema(), indent=2)
-        
+        # Get schema info
+        schema = output_schema.model_json_schema()
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
+
+        # Build example JSON object showing the structure
+        example = {}
+        for field_name, field_info in properties.items():
+            field_type = field_info.get("type", "string")
+            field_desc = field_info.get("description", "")
+
+            # Generate placeholder value based on type
+            if field_type == "string":
+                placeholder = f"<your {field_name} here>"
+            elif field_type == "integer":
+                placeholder = 0
+            elif field_type == "number":
+                placeholder = 0.0
+            elif field_type == "boolean":
+                placeholder = False
+            elif field_type == "array":
+                placeholder = []
+            elif field_type == "object":
+                placeholder = {}
+            else:
+                placeholder = f"<{field_name}>"
+
+            example[field_name] = placeholder
+
+        example_json = json.dumps(example, indent=2)
+
+        # Build field list with descriptions
+        field_docs = []
+        for field_name, field_info in properties.items():
+            is_required = field_name in required
+            field_type = field_info.get("type", "string")
+            field_desc = field_info.get("description", "")
+            req_marker = " (required)" if is_required else " (optional)"
+            desc_part = f" - {field_desc}" if field_desc else ""
+            field_docs.append(f"  - {field_name}: {field_type}{req_marker}{desc_part}")
+
+        field_list = "\n".join(field_docs) if field_docs else "  (no fields defined)"
+
         return f"""
 ## Output Format
-You MUST respond with a valid JSON object matching this schema:
+
+You MUST respond with a valid JSON object with these fields:
+{field_list}
+
+Example format:
 ```json
-{schema_json}
+{example_json}
 ```
+
+IMPORTANT: Return ONLY the JSON object with your actual data, not this example structure.
 """
     except Exception as e:
         logger.warning(f"Failed to build schema prompt: {e}")

@@ -56,8 +56,25 @@ class AdkSessionStore(SessionStore):
         return self._session_service
 
     async def ensure_session_exists(self, user_id: str, session_id: str) -> None:
-        """Create session if it doesn't exist (handle duplicates gracefully)."""
+        """Create session if it doesn't exist (check first to avoid duplicate key)."""
         logger.info("Ensuring ADK session exists: %s for user: %s", session_id, user_id)
+
+        if not self._use_database_sessions:
+            await self._session_service.create_session(
+                app_name=self._agent_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            return
+
+        existing = await self._session_service.get_session(
+            app_name=self._agent_name,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if existing is not None:
+            logger.debug("ADK session already exists: %s for user: %s", session_id, user_id)
+            return
 
         try:
             await self._session_service.create_session(
@@ -66,11 +83,11 @@ class AdkSessionStore(SessionStore):
                 session_id=session_id,
             )
             logger.info("Created new ADK session: %s", session_id)
-        except Exception as create_error:  # pragma: no cover - defensive logging
+        except Exception as create_error:  # pragma: no cover - defensive
             msg = str(create_error).lower()
             if "duplicate key" in msg or "already exists" in msg:
                 logger.info(
-                    "ADK session already exists: %s for user: %s", session_id, user_id
+                    "ADK session already exists (race): %s for user: %s", session_id, user_id
                 )
             else:
                 logger.error("Failed to create ADK session: %s", create_error)

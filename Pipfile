@@ -62,7 +62,7 @@ proto-plus = "==1.26.1"
 shapely = "==2.1.2"
 graphviz = "==0.21"
 langgraph-checkpoint-postgres = "*"
-mcp = "==1.17.0"
+mcp = "*"
 gunicorn = "==23.0.0"
 # Logging
 colorlog = "==6.9.0"
