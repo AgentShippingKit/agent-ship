@@ -87,11 +87,19 @@ class AdkEngine(AgentEngine):
         from src.agent_framework.tools.tool_manager import ToolManager
         tools = ToolManager.create_tools(self.agent_config, "adk")
 
+        # Auto-generate tool documentation and inject into prompt
+        from src.agent_framework.prompts.tool_documentation import PromptBuilder
+        final_instruction = PromptBuilder.build_system_prompt(
+            base_instruction=self.agent_config.instruction_template,
+            tools=tools,
+            engine_type="adk"
+        )
+
         agent_kwargs: dict[str, Any] = {
             "model": self._get_adk_model(),
             "name": self.agent_config.agent_name,
             "description": self.agent_config.description,
-            "instruction": self.agent_config.instruction_template,
+            "instruction": final_instruction,  # Use enhanced instruction with tool docs
             "input_schema": self.input_schema,
             "output_schema": self.output_schema,
             "tools": tools,

@@ -1,0 +1,118 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+
+      - name: Install dependencies
+        run: |
+          pipenv install --dev
+
+      - name: Run unit tests (fast)
+        run: |
+          pipenv run pytest tests/unit/ -v --tb=short -x
+        env:
+          PYTHONPATH: src
+
+      - name: Check code formatting
+        run: |
+          pipenv run ruff format --check src/ tests/
+
+      - name: Check code quality
+        run: |
+          pipenv run ruff check src/ tests/
+
+      - name: Verify MCP integration structure
+        run: |
+          # Verify key MCP files exist
+          test -f src/agent_framework/mcp/registry.py
+          test -f src/agent_framework/mcp/client_manager.py
+          test -f src/agent_framework/mcp/clients/stdio.py
+          test -f src/agent_framework/mcp/adapters/adk.py
+          test -f src/agent_framework/mcp/adapters/langgraph.py
+          test -f src/agent_framework/prompts/tool_documentation.py
+          echo "✅ All MCP integration files present"
+
+      - name: Count test coverage
+        run: |
+          echo "## Test Files Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit tests: $(find tests/unit -name 'test_*.py' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration tests: $(find tests -maxdepth 1 -name 'test_*.py' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- MCP unit tests: $(find tests/unit/agent_framework/test_mcp -name 'test_*.py' | wc -l)" >> $GITHUB_STEP_SUMMARY
+
+  pr-title-check:
+    name: PR Title Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            refactor
+            test
+            ci
+          requireScope: false
+
+  file-changes:
+    name: Check File Changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            src/**/*.py
+            tests/**/*.py
+
+      - name: List changed files
+        run: |
+          echo "## Changed Files" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for test files
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+          SRC_CHANGED=$(echo "$CHANGED_FILES" | grep -c "^src/" || true)
+          TEST_CHANGED=$(echo "$CHANGED_FILES" | grep -c "^tests/" || true)
+
+          if [[ $SRC_CHANGED -gt 0 && $TEST_CHANGED -eq 0 ]]; then
+            echo "⚠️  Source files changed but no test files added/modified" >> $GITHUB_STEP_SUMMARY
+            echo "Consider adding tests for your changes" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Tests included with source changes" >> $GITHUB_STEP_SUMMARY
+          fi

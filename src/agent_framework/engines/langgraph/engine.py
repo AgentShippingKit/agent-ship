@@ -311,10 +311,18 @@ class LangGraphEngine(AgentEngine):
         return None
 
     def _build_system_prompt(self) -> str:
-        """Build system prompt with output schema instructions."""
-        base_prompt = self.agent_config.instruction_template
+        """Build system prompt with tool documentation and output schema instructions."""
+        # Auto-generate tool documentation and inject into prompt
+        from src.agent_framework.prompts.tool_documentation import PromptBuilder
+
+        prompt_with_tools = PromptBuilder.build_system_prompt(
+            base_instruction=self.agent_config.instruction_template,
+            tools=self._tools,
+            engine_type="langgraph"
+        )
+
         schema_prompt = build_schema_prompt(self.output_schema)
-        return f"{base_prompt}\n{schema_prompt}"
+        return f"{prompt_with_tools}\n{schema_prompt}"
 
     def _convert_to_litellm_messages(self, messages: List[BaseMessage]) -> List[Dict[str, Any]]:
         """Convert LangChain messages to LiteLLM format."""

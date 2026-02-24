@@ -4,6 +4,7 @@ This module now uses only the Universal Tool architecture.
 All legacy code and backward compatibility has been removed.
 """
 
+import asyncio
 import importlib
 import logging
 from typing import Any, Dict, List, Optional
@@ -48,8 +49,14 @@ class ToolManager:
                 tools.append(tool)
             else:
                 logger.warning(f"Failed to create tool: {tool_config.get('id', 'unknown')}")
-        
-        logger.info(f"Created {len(tools)} tools for {engine_type} engine")
+
+        # MCP tools: discover from agent's mcp_servers and convert to engine format
+        if getattr(agent_config, "mcp_servers", None):
+            mcp_tools = ToolManager._create_mcp_tools(agent_config, engine_type)
+            tools.extend(mcp_tools)
+            logger.info(f"Added {len(mcp_tools)} MCP tools (total {len(tools)} for {engine_type} engine)")
+        else:
+            logger.info(f"Created {len(tools)} tools for {engine_type} engine")
         return tools
     
     @staticmethod
@@ -144,6 +151,60 @@ class ToolManager:
             logger.warning(f"Unsupported engine type: {engine_type}")
             return None
     
+    @staticmethod
+    def _create_mcp_tools(agent_config: AgentConfig, engine_type: str) -> List[Any]:
+        """Discover tools from agent's MCP servers and return engine-specific tools.
+        When no event loop is running, uses asyncio.run(). When a loop is already running
+        (e.g. under uvicorn), runs discovery in a separate thread with a temporary client
+        so tools resolve the client on the request loop at invoke time.
+        """
+        from src.agent_framework.mcp.adapters.adk import to_adk_tool
+        from src.agent_framework.mcp.adapters.langgraph import to_langgraph_tool
+        from src.agent_framework.mcp.tool_discovery import MCPToolDiscovery
+
+        async def _gather(use_temporary_client: bool) -> List[Any]:
+            discovery = MCPToolDiscovery()
+            result: List[Any] = []
+            for server_config in agent_config.mcp_servers:
+                try:
+                    if use_temporary_client:
+                        tool_infos = await discovery.discover_tools_temporary(server_config)
+                    else:
+                        tool_infos = await discovery.discover_tools(server_config)
+                except Exception as e:
+                    logger.warning("MCP discovery failed for server %s: %s", server_config.id, e)
+                    continue
+                for info in tool_infos:
+                    try:
+                        if engine_type == "adk":
+                            result.append(to_adk_tool(info, server_config))
+                        elif engine_type == "langgraph":
+                            result.append(to_langgraph_tool(info, server_config))
+                    except Exception as e:
+                        logger.warning("Failed to create MCP tool %s for %s: %s", info.name, server_config.id, e)
+            return result
+
+        try:
+            return asyncio.run(_gather(use_temporary_client=False))
+        except RuntimeError as e:
+            if "no running event loop" not in str(e).lower() and "event loop" in str(e).lower():
+                # Event loop already running (e.g. uvicorn): run discovery in a thread with a one-off client
+                import concurrent.futures
+
+                def _run_in_thread() -> List[Any]:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        return loop.run_until_complete(_gather(use_temporary_client=True))
+                    finally:
+                        loop.close()
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(_run_in_thread)
+                    result = future.result(timeout=60)
+                    return result
+            raise
+
     @staticmethod
     def _import_symbol(dotted_path: str) -> Any:
         """Import a symbol from a dotted module path.

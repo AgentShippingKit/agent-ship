@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "filesystem": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "env": {}
+    },
+    "postgres": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://agentship_user:agentship_password@postgres:5432/agentship_session_store"
+      ],
+      "env": {}
+    }
+  }
+}
