@@ -32,18 +32,9 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pipenv run pytest tests/unit/ -v --tb=short --cov=src --cov-report=term-missing
+          pipenv run pytest tests/unit/ -v --tb=short
         env:
           PYTHONPATH: src
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
 
   integration-tests:
     name: Integration Tests
