@@ -9,6 +9,7 @@ Provides endpoints for:
 - Log capture for debugging
 """
 
+import asyncio
 import io
 import json
 import logging
@@ -449,13 +450,17 @@ async def debug_chat_stream(request: DebugChatRequest):
                 _sessions[session_id].message_count += 1
                 stream_completed = True
                 
+            except (GeneratorExit, asyncio.CancelledError):
+                logger.info("Client disconnected, stream cancelled for %s", request.agent_name)
+                stream_completed = True
+                return
             except Exception as stream_error:
                 logger.exception("Error during agent chat_stream")
                 yield {
                     "event": "error",
                     "data": json.dumps({"type": "error", "message": str(stream_error)})
                 }
-            
+
         except Exception as e:
             logger.exception("Streaming chat failed")
             yield {

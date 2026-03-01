@@ -39,14 +39,15 @@
 ## ✨ Key Features
 
 - 🚀 **Dual Execution Engines** - Choose between Google ADK or LangGraph
-- 🔌 **MCP Integration** - Native Model Context Protocol support for tool access
+- 🔌 **MCP Integration** - STDIO and HTTP/OAuth MCP transports for both engines
 - 📝 **Auto Tool Documentation** - Tool schemas automatically generate LLM prompts
-- 🎯 **YAML Configuration** - Define agents declaratively, no boilerplate
+- 🎯 **YAML Configuration** - Define agents declaratively, `agent_name` drives registry key
 - 💾 **Session Management** - PostgreSQL-backed conversation memory
 - 📊 **Observability** - Built-in OPIK integration for monitoring
-- 🌊 **Streaming Support** - Token-by-token and SSE streaming
-- 🔧 **Debug UI** - Interactive Gradio interface for testing
+- 🌊 **Streaming Support** - Token-by-token and SSE streaming with Stop button
+- 🔧 **Debug UI** - Interactive interface with abort mid-stream support
 - 🐳 **Docker Ready** - One-command deployment with hot-reload
+- 🧪 **Integration Test Suite** - Comprehensive tests for agents, MCP, and streaming
 
 ---
 
@@ -195,78 +196,79 @@ AgentShip has **production-ready MCP (Model Context Protocol) integration**:
 ### Features
 
 - ✅ **STDIO Transport** - Connect to local MCP servers via stdin/stdout
+- ✅ **HTTP/OAuth Transport** - Connect to remote services (GitHub, Slack, etc.) via OAuth
 - ✅ **Auto Tool Discovery** - Tools are discovered automatically from MCP servers
 - ✅ **Auto Documentation** - Tool schemas generate LLM-friendly documentation
 - ✅ **Dual Engine Support** - Works with both ADK and LangGraph
+- ✅ **Per-Agent Client Isolation** - OAuth servers get separate clients per agent
+- ✅ **Env Var Resolution** - `${VAR}` tokens in command args resolved at load time
 - ✅ **Event Loop Safe** - Automatic reconnection on event loop changes
-- ✅ **Configuration-First** - Define MCP servers in JSON or YAML
 
-### Available MCP Servers
+### Transports
 
-AgentShip works with any MCP server. Popular ones:
-
-- **PostgreSQL** - `@modelcontextprotocol/server-postgres` - Database queries
-- **Filesystem** - `@modelcontextprotocol/server-filesystem` - File operations
-- **GitHub** - `@modelcontextprotocol/server-github` - Repository access
-- **Google Drive** - `@modelcontextprotocol/server-gdrive` - Document access
-- **Brave Search** - `@modelcontextprotocol/server-brave-search` - Web search
-
-See [MCP Servers List](https://github.com/modelcontextprotocol/servers) for more.
+| Transport | Use Case | Auth |
+|-----------|----------|------|
+| `stdio` | Local servers (`npx`, Python scripts) | None (env vars) |
+| `http` / `sse` | Remote APIs (GitHub, Slack, etc.) | OAuth 2.0 |
 
 ### Configuration
 
-**Option 1: Global Config** (`.mcp.settings.json`)
+**Global Config** (`.mcp.settings.json`):
 ```json
 {
   "servers": {
     "postgres": {
       "transport": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://..."],
-      "env": {}
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${AGENT_SESSION_STORE_URI}"]
+    },
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "auth": {
+        "type": "oauth",
+        "provider": "github",
+        "client_id_env": "GITHUB_OAUTH_CLIENT_ID",
+        "client_secret_env": "GITHUB_OAUTH_CLIENT_SECRET",
+        "authorize_url": "https://github.com/login/oauth/authorize",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "scopes": ["repo", "read:org"]
+      }
     }
   }
 }
 ```
 
-**Option 2: Agent-Specific** (in `main_agent.yaml`)
+**Agent YAML**:
 ```yaml
 mcp:
   servers:
-    - postgres  # Reference from .mcp.settings.json
+    - postgres   # STDIO: shared client
+    - github     # HTTP/OAuth: per-agent client
 ```
 
-### Example: PostgreSQL Agent
+### OAuth Setup
 
-See `src/all_agents/postgres_mcp_agent/` for a complete working example.
-
-Test it:
 ```bash
-curl -X POST http://localhost:7001/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "postgres_mcp_agent",
-    "query": "Show me all tables in the database",
-    "session_id": "demo-123",
-    "user_id": "user-123"
-  }'
+# Connect a user to GitHub MCP (opens browser)
+pipenv run agentship mcp connect github --user-id alice
+
+# List active connections
+pipenv run agentship mcp list-connections --user-id alice
 ```
+
+### Example Agents
+
+- `src/all_agents/github_adk_mcp_agent/` — GitHub via HTTP/OAuth, ADK engine
+- `src/all_agents/github_langgraph_mcp_agent/` — GitHub via HTTP/OAuth, LangGraph engine
 
 ### How It Works
 
 1. **Agent Initialization** - MCP servers configured in YAML
-2. **Tool Discovery** - AgentShip connects to MCP servers and discovers tools
-3. **Schema Extraction** - Tool schemas are extracted from MCP tool info
-4. **Auto Documentation** - `ToolDocumentationGenerator` creates LLM-friendly docs
-5. **Prompt Injection** - `PromptBuilder` injects tool docs into system prompt
-6. **Runtime** - Agent uses tools naturally, AgentShip handles MCP calls
-
-### Documentation
-
-- 📖 **MCP Integration Design**: `docs/MCP_INTEGRATION_DESIGN.md`
-- 🛠️ **Implementation Summary**: `docs/IMPLEMENTATION_SUMMARY.md`
-- ⚠️ **Known Issues**: `docs/MCP_KNOWN_ISSUES.md`
-- 🔧 **Event Loop Fix**: `docs/EVENT_LOOP_FIX.md`
+2. **Tool Discovery** - AgentShip connects to MCP servers and fetches tool schemas
+3. **Auto Documentation** - `ToolDocumentationGenerator` creates LLM-friendly docs
+4. **Prompt Injection** - `PromptBuilder` injects docs into the system prompt
+5. **Runtime** - Agent uses tools naturally; AgentShip handles all MCP transport
 
 ---
 
@@ -328,6 +330,7 @@ Features:
 - 📝 Dynamic input forms from Pydantic schemas
 - 🔍 Real-time debug logs
 - 🔄 Session management (new/clear conversations)
+- ⏹ **Stop button** — abort a running stream mid-response
 - 🔌 Works with MCP-enabled agents
 
 ---
@@ -355,10 +358,12 @@ make dev            # Start dev server → http://localhost:7001
 make test           # Run all tests
 make test-cov       # Run tests with coverage
 
-# Run specific tests
-docker exec agentship-api python tests/verify_implementation.py  # Full verification
-docker exec agentship-api python tests/test_auto_tool_docs.py    # Auto tool docs
-docker exec agentship-api python tests/test_event_loop_fix.py    # Event loop handling
+# Integration tests (by scope)
+pipenv run pytest tests/unit/ -v                              # Unit tests only
+pipenv run pytest tests/integration/ -v                       # All integration tests
+pipenv run pytest tests/integration/test_agent_naming.py -v  # Agent naming
+pipenv run pytest tests/integration/test_mcp_infrastructure.py -v  # MCP isolation
+pipenv run pytest tests/integration/test_streaming.py -v     # Streaming events
 ```
 
 ### Deploy to Heroku
@@ -406,11 +411,6 @@ The `docker-compose.yml` automatically overrides the database URL for Docker net
 
 ### Documentation Files
 - **📘 CLAUDE.md** - Developer guide for Claude Code
-- **📗 MCP Integration**:
-  - `docs/MCP_INTEGRATION_DESIGN.md` - Architecture and design
-  - `docs/IMPLEMENTATION_SUMMARY.md` - Features and verification
-  - `docs/MCP_KNOWN_ISSUES.md` - Known issues and workarounds
-  - `docs/EVENT_LOOP_FIX.md` - Event loop handling
 - **📙 Architecture** - See `branding/Architecture.png`
 
 ---
@@ -423,23 +423,27 @@ AgentShip includes several example patterns:
 2. **Orchestrator** (`orchestrator_pattern/`) - Main agent + sub-agents
 3. **Tool Pattern** (`tool_pattern/`) - Agent with custom tools
 4. **File Analysis** (`file_analysis_agent/`) - PDF/document analysis
-5. **PostgreSQL MCP** (`postgres_mcp_agent/`) - **MCP integration example**
-6. **MCP Demo** (`mcp_demo_agent/`) - Filesystem MCP example
+5. **PostgreSQL MCP** (`postgres_mcp_agent/`) - STDIO MCP integration example
+6. **GitHub ADK MCP** (`github_adk_mcp_agent/`) - HTTP/OAuth MCP with ADK
+7. **GitHub LangGraph MCP** (`github_langgraph_mcp_agent/`) - HTTP/OAuth MCP with LangGraph
 
 ---
 
 ## 🌟 Production Features
 
 - ✅ **Dual Engines** - ADK (Google) and LangGraph
-- ✅ **MCP Integration** - Connect to any MCP server
+- ✅ **MCP Integration** - STDIO and HTTP/OAuth MCP transports
+- ✅ **Per-Agent MCP Isolation** - OAuth clients separated per agent
+- ✅ **Env Var Resolution** - `${VAR}` resolved in MCP command args
 - ✅ **Auto Tool Docs** - Zero-maintenance tool documentation
 - ✅ **Session Memory** - PostgreSQL-backed conversations
-- ✅ **Streaming** - Token-by-token and SSE support
+- ✅ **Streaming** - Token-by-token and SSE with abort support
 - ✅ **Observability** - OPIK integration
 - ✅ **Hot Reload** - Development-friendly
 - ✅ **Docker Ready** - Production deployment
-- ✅ **Auto Discovery** - YAML-based agent registration
+- ✅ **YAML-Based Naming** - `agent_name` in YAML drives registry key
 - ✅ **Event Loop Safe** - Robust async handling
+- ✅ **Integration Tests** - Comprehensive test suite for all features
 
 ---
 

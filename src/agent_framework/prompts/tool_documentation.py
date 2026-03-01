@@ -234,6 +234,5 @@ class PromptBuilder:
         tool_docs = ToolDocumentationGenerator.generate_tool_docs(tools, engine_type)
 
         # Inject tool documentation into prompt
-        # Add a separator and append tool docs
         separator = "\n\n" + "=" * 80 + "\n"
         return f"{base_instruction}{separator}{tool_docs}"

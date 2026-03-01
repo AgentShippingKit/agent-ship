@@ -4,6 +4,7 @@ import pytest
 
 from src.agent_framework.mcp.client_manager import MCPClientManager
 from src.agent_framework.mcp.clients.stdio import StdioMCPClient
+from src.agent_framework.mcp.clients.sse import SSEMCPClient
 from src.agent_framework.mcp.models import MCPServerConfig, MCPTransport
 
 
@@ -45,7 +46,13 @@ def test_get_client_same_id_returns_same_instance():
     assert a is b
 
 
-def test_get_client_unsupported_transport_raises():
+def test_get_client_sse_raises_without_auth_db(monkeypatch):
+    """SSE transport is now supported via SSEMCPClient, but requires AGENTSHIP_AUTH_DB_URI.
+
+    SSEMCPClient was added in the mcp_integration_stdio branch. When the DB URI
+    is not configured the client raises ValueError at construction time.
+    """
+    monkeypatch.delenv("AGENTSHIP_AUTH_DB_URI", raising=False)
     config = MCPServerConfig(
         id="sse_server",
         transport=MCPTransport.SSE,
@@ -54,8 +61,21 @@ def test_get_client_unsupported_transport_raises():
     manager = MCPClientManager.get_instance()
     with pytest.raises(ValueError) as exc_info:
         manager.get_client(config)
-    assert "Unsupported MCP transport" in str(exc_info.value)
-    assert "stdio" in str(exc_info.value).lower()
+    assert "AGENTSHIP_AUTH_DB_URI" in str(exc_info.value)
+
+
+def test_get_client_http_raises_without_auth_db(monkeypatch):
+    """HTTP transport also uses SSEMCPClient; same AGENTSHIP_AUTH_DB_URI requirement."""
+    monkeypatch.delenv("AGENTSHIP_AUTH_DB_URI", raising=False)
+    config = MCPServerConfig(
+        id="http_server",
+        transport=MCPTransport.HTTP,
+        url="https://example.com/mcp",
+    )
+    manager = MCPClientManager.get_instance()
+    with pytest.raises(ValueError) as exc_info:
+        manager.get_client(config)
+    assert "AGENTSHIP_AUTH_DB_URI" in str(exc_info.value)
 
 
 def test_stdio_client_requires_stdio_transport():

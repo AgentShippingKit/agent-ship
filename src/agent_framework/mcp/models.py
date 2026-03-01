@@ -40,14 +40,20 @@ class MCPAuthConfig(BaseModel):
     """Authentication configuration for an MCP server.
 
     Per-server env var names are specified here (e.g. GITHUB_TOKEN, DATABASE_MCP_TOKEN).
+    For OAuth servers, also includes provider-specific URLs and configuration.
     """
 
     type: MCPAuthType = MCPAuthType.NONE
     token_var: Optional[str] = None  # For env_var / bearer_token
     api_key_var: Optional[str] = None  # For api_key
-    client_id_env: Optional[str] = None  # For oauth
-    client_secret_env: Optional[str] = None  # For oauth
-    scopes: List[str] = Field(default_factory=list)  # For oauth
+
+    # OAuth configuration
+    provider: Optional[str] = None  # OAuth provider name (e.g., "github", "slack")
+    client_id_env: Optional[str] = None  # Env var name for client ID
+    client_secret_env: Optional[str] = None  # Env var name for client secret
+    authorize_url: Optional[str] = None  # OAuth authorization endpoint
+    token_url: Optional[str] = None  # OAuth token exchange endpoint
+    scopes: List[str] = Field(default_factory=list)  # OAuth scopes
 
 
 class MCPServerConfig(BaseModel):
@@ -55,6 +61,7 @@ class MCPServerConfig(BaseModel):
 
     id: str = Field(..., description="Unique server identifier")
     transport: MCPTransport = Field(..., description="Connection transport")
+    description: Optional[str] = Field(default=None, description="Human-readable server description")
     command: Optional[List[str]] = Field(default=None, description="STDIO: command + args")
     url: Optional[str] = Field(default=None, description="SSE/HTTP: server URL")
     env: Dict[str, str] = Field(default_factory=dict, description="Environment variables for the server")

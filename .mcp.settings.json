@@ -1,20 +1,63 @@
 {
-  "servers": {
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
-      "env": {}
-    },
+  "mcpServers": {
     "postgres": {
-      "transport": "stdio",
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-postgres",
-        "postgresql://agentship_user:agentship_password@postgres:5432/agentship_session_store"
+        "${AGENT_SESSION_STORE_URI}"
       ],
       "env": {}
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "env": {}
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "env": {}
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "description": "Access GitHub repos, issues, PRs, and code search via GitHub Copilot MCP server",
+      "auth": {
+        "type": "oauth",
+        "provider": "github",
+        "client_id_env": "GITHUB_OAUTH_CLIENT_ID",
+        "client_secret_env": "GITHUB_OAUTH_CLIENT_SECRET",
+        "authorize_url": "https://github.com/login/oauth/authorize",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "scopes": ["repo", "read:org"]
+      }
+    },
+    "slack": {
+      "transport": "sse",
+      "url": "https://slack.com/api/mcp",
+      "description": "Send messages, read channels, and manage Slack workspaces",
+      "auth": {
+        "type": "oauth",
+        "provider": "slack",
+        "client_id_env": "SLACK_OAUTH_CLIENT_ID",
+        "client_secret_env": "SLACK_OAUTH_CLIENT_SECRET",
+        "authorize_url": "https://slack.com/oauth/v2/authorize",
+        "token_url": "https://slack.com/api/oauth.v2.access",
+        "scopes": ["chat:write", "channels:read", "channels:history"]
+      }
     }
   }
 }

@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from dotenv import load_dotenv
 from src.agent_framework.registry import discover_agents
 from src.service.routers.rest_router import router as rest_router
+from src.service.routes.mcp_auth import router as mcp_auth_router
 from debug_ui.router import router as debug_router
 load_dotenv()
 
@@ -173,6 +174,9 @@ else:
 discover_agents()
 
 app.include_router(rest_router)
+
+# Include MCP OAuth router
+app.include_router(mcp_auth_router)
 
 # Include Debug API router
 app.include_router(debug_router, prefix="/api/debug", tags=["debug"])

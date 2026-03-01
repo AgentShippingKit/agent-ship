@@ -177,9 +177,9 @@ class ToolManager:
                 for info in tool_infos:
                     try:
                         if engine_type == "adk":
-                            result.append(to_adk_tool(info, server_config))
+                            result.append(to_adk_tool(info, server_config, agent_name=agent_config.agent_name))
                         elif engine_type == "langgraph":
-                            result.append(to_langgraph_tool(info, server_config))
+                            result.append(to_langgraph_tool(info, server_config, agent_name=agent_config.agent_name))
                     except Exception as e:
                         logger.warning("Failed to create MCP tool %s for %s: %s", info.name, server_config.id, e)
             return result

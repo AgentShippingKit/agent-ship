@@ -38,15 +38,24 @@ class MCPToolDiscovery:
         Use this when discovery runs on a different event loop (e.g. a worker thread)
         so the main loop can create its own client when the tool is invoked.
         """
-        if server_config.transport != MCPTransport.STDIO:
-            raise ValueError(
-                f"discover_tools_temporary only supports stdio transport (server {server_config.id})"
-            )
-        from src.agent_framework.mcp.clients.stdio import StdioMCPClient
+        if server_config.transport == MCPTransport.STDIO:
+            from src.agent_framework.mcp.clients.stdio import StdioMCPClient
+            client = StdioMCPClient(server_config)
+            try:
+                tools = await client.list_tools()
+                return _filter_tools(tools, server_config)
+            finally:
+                await client.close()
 
-        client = StdioMCPClient(server_config)
-        try:
-            tools = await client.list_tools()
-            return _filter_tools(tools, server_config)
-        finally:
-            await client.close()
+        if server_config.transport in (MCPTransport.SSE, MCPTransport.HTTP):
+            from src.agent_framework.mcp.clients.sse import SSEMCPClient
+            from src.agent_framework.mcp.client_manager import get_mcp_user_id
+            client = SSEMCPClient(server_config, get_mcp_user_id())
+            async with client:
+                tools = await client.list_tools()
+                return _filter_tools(tools, server_config)
+
+        raise ValueError(
+            f"discover_tools_temporary: unsupported transport '{server_config.transport}' "
+            f"for server '{server_config.id}'"
+        )

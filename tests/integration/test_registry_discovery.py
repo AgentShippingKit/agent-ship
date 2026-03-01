@@ -48,19 +48,19 @@ def test_discover_agents_registers_expected_names():
             f"Make sure the directory exists and contains agent Python files."
         )
         
-        # Check for expected open-source agents (at least one should be present)
-        expected_patterns = [
-            "trip_planner",  # TripPlannerAgent (orchestrator)
-            "translation",  # TranslationAgent (single-agent)
-            "file_analysis",  # FileAnalysisAgent
-            "personal_assistant",  # PersonalAssistantAgent
-            "database",  # DatabaseAgent (tool pattern)
+        # Check for expected agents by their YAML-declared agent_name values
+        expected_names = [
+            "trip_planner_agent",  # TripPlannerAgent (orchestrator)
+            "translation_agent",   # TranslationAgent (single-agent)
+            "file_analysis_agent", # FileAnalysisAgent
+            "personal_assistant_agent",  # PersonalAssistantAgent
+            "database_agent",      # DatabaseAgent (tool pattern)
         ]
-        
-        found_any = any(pattern in names for pattern in expected_patterns)
+
+        found_any = any(name in names for name in expected_names)
         assert found_any, (
             f"None of the expected agents found. "
-            f"Expected at least one of: {expected_patterns}. "
+            f"Expected at least one of: {expected_names}. "
             f"Found: {sorted(names)}"
         )
     finally:

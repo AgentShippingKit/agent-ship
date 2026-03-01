@@ -87,13 +87,10 @@ class AdkEngine(AgentEngine):
         from src.agent_framework.tools.tool_manager import ToolManager
         tools = ToolManager.create_tools(self.agent_config, "adk")
 
-        # Auto-generate tool documentation and inject into prompt
-        from src.agent_framework.prompts.tool_documentation import PromptBuilder
-        final_instruction = PromptBuilder.build_system_prompt(
-            base_instruction=self.agent_config.instruction_template,
-            tools=tools,
-            engine_type="adk"
-        )
+        # ADK exposes tools to the model via FunctionDeclaration — the LLM receives
+        # full tool schemas through that mechanism, so prompt-based doc injection is
+        # not needed. We use the instruction template directly.
+        final_instruction = self.agent_config.instruction_template
 
         agent_kwargs: dict[str, Any] = {
             "model": self._get_adk_model(),

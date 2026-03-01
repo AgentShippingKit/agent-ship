@@ -84,7 +84,7 @@ def _create_args_schema(tool_info: MCPToolInfo) -> Type[BaseModel]:
         )
 
 
-def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig) -> Any:
+def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig, agent_name: str = "") -> Any:
     """Wrap an MCP tool as a LangChain StructuredTool with proper schema.
 
     This extracts the MCP tool's input schema and creates a proper Pydantic model
@@ -103,7 +103,7 @@ def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig) ->
     async def mcp_tool_fn(**kwargs: Any) -> str:
         from src.agent_framework.mcp.client_manager import MCPClientManager
 
-        client = MCPClientManager.get_instance().get_client(server_config)
+        client = MCPClientManager.get_instance().get_client(server_config, owner=agent_name)
         result = await client.call_tool(name, arguments=kwargs if kwargs else {})
         if result is None:
             return ""

@@ -140,7 +140,7 @@ class MCPServerRegistry:
         Handles flexible input formats:
         - Compact: { "command": "npx", "args": [...], "env": {...} }
         - Explicit: { "transport": "stdio", "command": [...], ... }
-        - Mixed: { "transport": "stdio", "command": "npx", "args": [...] }
+        - OAuth SSE: { "transport": "sse", "url": "...", "auth": {...} }
         """
         normalized = {"id": server_id}
 
@@ -148,7 +148,7 @@ class MCPServerRegistry:
         if "transport" in raw:
             normalized["transport"] = raw["transport"]
         elif "url" in raw:
-            normalized["transport"] = "http"  # Model will refine based on URL
+            normalized["transport"] = "sse"  # SSE for remote servers
             normalized["url"] = raw["url"]
         elif "command" in raw:
             normalized["transport"] = "stdio"
@@ -158,30 +158,67 @@ class MCPServerRegistry:
             command = raw["command"]
             args = raw.get("args", [])
 
-            # Command can be string or list
-            # String + args → combine into single list
+            # Command can be string or list; combine into single list
             if isinstance(command, str):
-                normalized["command"] = [command] + (args if isinstance(args, list) else [])
+                cmd_list = [command] + (args if isinstance(args, list) else [])
             elif isinstance(command, list):
-                normalized["command"] = command
+                cmd_list = command
             else:
                 logger.warning("Server '%s': invalid command type %s", server_id, type(command).__name__)
-                normalized["command"] = [str(command)]
+                cmd_list = [str(command)]
+
+            # Resolve ${VAR} references in each element (e.g. connection strings)
+            normalized["command"] = [self._resolve_env_var_str(a) for a in cmd_list]
 
         # Copy URL for HTTP/SSE transports
         if "url" in raw:
             normalized["url"] = raw["url"]
 
-        # Copy environment variables
+        # Copy description
+        if "description" in raw:
+            normalized["description"] = raw["description"]
+
+        # Handle environment variables (resolve ${VAR} syntax)
         if "env" in raw:
-            normalized["env"] = raw["env"]
+            normalized["env"] = self._resolve_env_vars(raw["env"])
+
+        # Handle OAuth authentication config
+        if "auth" in raw and isinstance(raw["auth"], dict):
+            # Copy auth config as-is (env var names only, no credential resolution)
+            # Credentials will be resolved at runtime in OAuth routes
+            normalized["auth"] = raw["auth"].copy()
 
         # Copy other optional fields
-        for key in ["timeout", "max_retries", "auth", "tools"]:
+        for key in ["timeout", "max_retries", "tools"]:
             if key in raw:
                 normalized[key] = raw[key]
 
         return normalized
+
+    def _resolve_env_var_str(self, value: str) -> str:
+        """Resolve a single ${VAR} reference in a string value."""
+        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            env_var = value[2:-1]
+            return os.getenv(env_var, value)
+        return value
+
+    def _resolve_env_vars(self, env_dict: Dict[str, str]) -> Dict[str, str]:
+        """Resolve environment variable references like ${VAR} in env dict.
+
+        Args:
+            env_dict: Dictionary with potential ${VAR} references
+
+        Returns:
+            Dictionary with resolved values
+        """
+        resolved = {}
+        for key, value in env_dict.items():
+            if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+                env_var = value[2:-1]  # Extract VAR from ${VAR}
+                resolved[key] = os.getenv(env_var, value)  # Use original if not found
+            else:
+                resolved[key] = value
+        return resolved
 
     @classmethod
     def reset_instance(cls) -> None:

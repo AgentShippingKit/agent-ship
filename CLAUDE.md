@@ -168,6 +168,8 @@ Set `execution_engine` in YAML. Default is `adk`.
 #### 3. Agent Discovery
 - Agents in `src/all_agents/` are auto-discovered at startup
 - Discovery looks for classes inheriting from `BaseAgent`
+- **Registry key = `agent_name` from `main_agent.yaml`** (not class name or directory name)
+- Only `main_agent.yaml` files create discoverable agents; sub-agent YAMLs in orchestrator dirs are not independently registered
 - Registry: `src/agent_framework/registry/discovery.py`
 
 #### 4. Session Storage
@@ -201,11 +203,21 @@ AgentShip has **production-ready MCP (Model Context Protocol) support** for both
 ### Features
 
 - ✅ **STDIO Transport** - Connect to local MCP servers via stdin/stdout
+- ✅ **HTTP/OAuth Transport** - Connect to remote services (GitHub, Slack) via OAuth 2.0
 - ✅ **Auto Tool Discovery** - Tools discovered automatically from MCP servers
 - ✅ **Auto Documentation** - Tool schemas → LLM prompts (zero manual work)
 - ✅ **Dual Engine Support** - Works with both ADK and LangGraph
+- ✅ **Per-Agent Client Isolation** - OAuth servers get separate client per agent
+- ✅ **Env Var Resolution** - `${VAR}` tokens in command args resolved at load time
 - ✅ **Event Loop Safe** - Automatic reconnection when event loop changes
 - ✅ **Configuration-First** - Define servers in JSON or YAML
+
+### Transport Types
+
+| Transport | Client Class | Use Case | Auth |
+|-----------|-------------|----------|------|
+| `stdio` | `StdioMCPClient` | Local servers (npx, Python) | Env vars |
+| `http`/`sse` | `SSEMCPClient` | Remote APIs | OAuth 2.0 (requires `AGENTSHIP_AUTH_DB_URI`) |
 
 ### Architecture
 
@@ -214,9 +226,9 @@ Agent YAML
     ↓
 MCP Registry (.mcp.settings.json)
     ↓
-MCP Client Manager (singleton, caches clients)
+MCPClientManager (singleton, per-agent cache)
     ↓
-STDIO MCP Client (spawns server process)
+StdioMCPClient / SSEMCPClient
     ↓
 Tool Discovery (fetches tool schemas)
     ↓
@@ -228,6 +240,20 @@ Prompt Builder (injects into system prompt)
     ↓
 Agent uses tools (MCP calls handled automatically)
 ```
+
+### Per-Agent Client Isolation
+
+STDIO servers are shared (all agents share one client). OAuth/HTTP servers are isolated per agent to prevent token cross-contamination:
+
+```python
+# STDIO: shared client (safe to share)
+client = manager.get_client(postgres_config)
+
+# HTTP/OAuth: per-agent client
+client = manager.get_client(github_config, owner="my_agent")
+```
+
+Cache key: `"{server_id}"` for shared, `"{server_id}:{agent_name}"` for per-agent.
 
 ### Configuration
 
@@ -241,14 +267,21 @@ Agent uses tools (MCP calls handled automatically)
       "args": [
         "-y",
         "@modelcontextprotocol/server-postgres",
-        "postgresql://user:pass@host:5432/db"
-      ],
-      "env": {}
+        "${AGENT_SESSION_STORE_URI}"
+      ]
     },
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "auth": {
+        "type": "oauth",
+        "provider": "github",
+        "client_id_env": "GITHUB_OAUTH_CLIENT_ID",
+        "client_secret_env": "GITHUB_OAUTH_CLIENT_SECRET",
+        "authorize_url": "https://github.com/login/oauth/authorize",
+        "token_url": "https://github.com/login/oauth/access_token",
+        "scopes": ["repo"]
+      }
     }
   }
 }
@@ -257,15 +290,12 @@ Agent uses tools (MCP calls handled automatically)
 **Agent YAML**:
 ```yaml
 agent_name: database_agent
-llm_provider_name: openai
-llm_model: gpt-4o-mini
 execution_engine: adk  # or langgraph - both work!
-instruction_template: |
-  You are a database assistant.
 
 mcp:
   servers:
-    - postgres  # References server from .mcp.settings.json
+    - postgres   # STDIO: shared client
+    - github     # HTTP/OAuth: per-agent client
 ```
 
 ### Auto Tool Documentation
@@ -306,14 +336,18 @@ This is **automatically injected** into the agent's system prompt. No manual wor
 
 ### Key Files
 
-- **Registry**: `src/agent_framework/mcp/registry.py` - MCP server configuration
-- **Client Manager**: `src/agent_framework/mcp/client_manager.py` - Singleton manager
+- **Registry**: `src/agent_framework/mcp/registry.py` - MCP server configuration, env var resolution
+- **Client Manager**: `src/agent_framework/mcp/client_manager.py` - Singleton, per-agent cache
 - **STDIO Client**: `src/agent_framework/mcp/clients/stdio.py` - Process spawning
+- **SSE Client**: `src/agent_framework/mcp/clients/sse.py` - HTTP/OAuth transport
 - **Tool Discovery**: `src/agent_framework/mcp/tool_discovery.py` - Schema fetching
 - **ADK Adapter**: `src/agent_framework/mcp/adapters/adk.py` - ADK tool wrapper
 - **LangGraph Adapter**: `src/agent_framework/mcp/adapters/langgraph.py` - LangGraph wrapper
 - **Tool Doc Generator**: `src/agent_framework/prompts/tool_documentation.py` - Schema → prompt
 - **Tool Manager**: `src/agent_framework/tools/tool_manager.py` - Unified tool creation
+- **Token Encryption**: `src/agent_framework/mcp/token_encryption.py` - OAuth token storage
+- **DB Operations**: `src/agent_framework/mcp/db_operations.py` - CRUD for OAuth tokens
+- **CLI**: `src/cli/` - `agentship mcp connect/list-connections/disconnect`
 
 ### Event Loop Handling
 
@@ -351,36 +385,20 @@ See [MCP Servers](https://github.com/modelcontextprotocol/servers) for full list
 ### Testing MCP Integration
 
 ```bash
-# Full verification (all tests)
-docker exec agentship-api python tests/verify_implementation.py
+# Unit tests (no external deps)
+pipenv run pytest tests/unit/agent_framework/test_mcp/ -v
 
-# Auto tool documentation
-docker exec agentship-api python tests/test_auto_tool_docs.py
-
-# Event loop handling
-docker exec agentship-api python tests/test_event_loop_fix.py
-
-# Test PostgreSQL agent via API
-curl -X POST http://localhost:7001/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "postgres_mcp_agent",
-    "query": "List all tables",
-    "session_id": "test-123",
-    "user_id": "user-123"
-  }'
+# Integration tests
+pipenv run pytest tests/integration/test_mcp_infrastructure.py -v  # no external deps
+pipenv run pytest tests/integration/test_mcp_http_agents.py -v     # no external deps
+pipenv run pytest tests/integration/test_mcp_stdio_agents.py -v    # requires Docker postgres
 ```
 
-### Documentation
+### Example Agents
 
-- **Design**: `docs/MCP_INTEGRATION_DESIGN.md`
-- **Summary**: `docs/IMPLEMENTATION_SUMMARY.md`
-- **Known Issues**: `docs/MCP_KNOWN_ISSUES.md`
-- **Event Loop Fix**: `docs/EVENT_LOOP_FIX.md`
-
-### Example Agent
-
-See `src/all_agents/postgres_mcp_agent/` for a complete working example of MCP integration.
+- `src/all_agents/postgres_mcp_agent/` — STDIO transport example
+- `src/all_agents/github_adk_mcp_agent/` — HTTP/OAuth transport, ADK engine
+- `src/all_agents/github_langgraph_mcp_agent/` — HTTP/OAuth transport, LangGraph engine
 
 ---
 
@@ -418,6 +436,29 @@ The repository includes example patterns:
 - Async tests supported (`asyncio_mode = auto` in pytest.ini)
 - Coverage reports in `htmlcov/index.html`
 - Test structure mirrors `src/` structure
+
+### Integration Test Fixtures (`tests/integration/conftest.py`)
+
+- `project_root_cwd()` — context manager, required when calling `discover_agents("src/all_agents")`
+- `reset_mcp_singletons` — autouse, resets `MCPClientManager` and `MCPServerRegistry` between tests
+- `reset_agent_instance_cache` — autouse, clears the agent registry singleton
+- `mock_langgraph_llm(response_text)` — patches `src.agent_framework.engines.langgraph.engine.acompletion`
+- `require_postgres()` — returns `pytest.mark.skipif` when `AGENT_SESSION_STORE_URI` is not set
+
+### Key Test Patterns
+
+```python
+# ADK engine access (MiddlewareEngine wraps actual engine)
+agent.engine._inner.runner  # NOT agent.engine.runner
+
+# LangGraph LLM mock
+with mock_langgraph_llm("response text"):
+    events = [e async for e in agent.chat_stream(request)]
+
+# MCP singletons reset between tests
+MCPClientManager.reset_instance()
+MCPServerRegistry._instance = None
+```
 
 ## API Endpoints
 

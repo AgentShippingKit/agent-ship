@@ -67,13 +67,14 @@ def _create_mcp_adk_tool_class() -> type:
     class MCPAdkTool(BaseTool):
         """MCP tool for ADK: declaration comes from MCP input_schema so the LLM gets parameters."""
 
-        def __init__(self, tool_info: MCPToolInfo, server_config: MCPServerConfig) -> None:
+        def __init__(self, tool_info: MCPToolInfo, server_config: MCPServerConfig, agent_name: str = "") -> None:
             super().__init__(
                 name=tool_info.name,
                 description=tool_info.description or f"MCP tool: {tool_info.name}",
             )
             self._tool_info = tool_info
             self._server_config = server_config
+            self._agent_name = agent_name
 
         def _get_declaration(self) -> Optional[types.FunctionDeclaration]:
             params = _mcp_input_schema_to_genai_parameters(self._tool_info.input_schema)
@@ -87,7 +88,7 @@ def _create_mcp_adk_tool_class() -> type:
             from src.agent_framework.mcp.client_manager import MCPClientManager
 
             try:
-                client = MCPClientManager.get_instance().get_client(self._server_config)
+                client = MCPClientManager.get_instance().get_client(self._server_config, owner=self._agent_name)
                 # Pass empty dict for tools with no params, not None
                 result = await client.call_tool(
                     self._tool_info.name, arguments=args if args is not None else {}
@@ -113,8 +114,8 @@ def _create_mcp_adk_tool_class() -> type:
 MCPAdkTool = _create_mcp_adk_tool_class()
 
 
-def to_adk_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig) -> Any:
+def to_adk_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig, agent_name: str = "") -> Any:
     """Wrap an MCP tool for ADK so the LLM receives name, description, and parameters.
     Client is resolved at invoke time from server_config so it uses the correct event loop.
     """
-    return MCPAdkTool(tool_info, server_config)
+    return MCPAdkTool(tool_info, server_config, agent_name=agent_name)

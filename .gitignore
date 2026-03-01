@@ -105,3 +105,6 @@ uv.lock
 # Profiling
 *.prof
 *.lprof
+
+# Internal design docs (not for public consumption)
+design-docs/
