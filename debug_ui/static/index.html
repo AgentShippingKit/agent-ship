@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="/branding/favicons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/branding/favicons/favicon-16.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -55,7 +56,41 @@
         }
         
         .input-field:focus { box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3); }
-        
+
+        /* Markdown prose styles for assistant messages */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3,
+        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            font-weight: 600; margin: 0.75em 0 0.25em; line-height: 1.3;
+        }
+        .markdown-content h1 { font-size: 1.25em; }
+        .markdown-content h2 { font-size: 1.1em; }
+        .markdown-content h3 { font-size: 1em; }
+        .markdown-content p { margin: 0.4em 0; }
+        .markdown-content ul, .markdown-content ol { padding-left: 1.25em; margin: 0.4em 0; }
+        .markdown-content li { margin: 0.15em 0; }
+        .markdown-content code {
+            background: rgba(0,0,0,0.15); border-radius: 3px; padding: 0.1em 0.35em;
+            font-family: monospace; font-size: 0.88em;
+        }
+        .markdown-content pre {
+            background: rgba(0,0,0,0.2); border-radius: 6px; padding: 0.75em 1em;
+            overflow-x: auto; margin: 0.5em 0;
+        }
+        .markdown-content pre code { background: none; padding: 0; }
+        .markdown-content strong { font-weight: 600; }
+        .markdown-content em { font-style: italic; }
+        .markdown-content blockquote {
+            border-left: 3px solid #6366f1; padding-left: 0.75em;
+            margin: 0.4em 0; opacity: 0.85;
+        }
+        .markdown-content a { color: #818cf8; text-decoration: underline; }
+        .markdown-content table { border-collapse: collapse; width: 100%; margin: 0.5em 0; }
+        .markdown-content th, .markdown-content td {
+            border: 1px solid rgba(255,255,255,0.15); padding: 0.3em 0.6em; text-align: left;
+        }
+        .markdown-content th { background: rgba(0,0,0,0.15); font-weight: 600; }
+        .markdown-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.15); margin: 0.75em 0; }
+
         /* Theme transition */
         * {
             transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -108,16 +143,23 @@
                 </div>
                 
                 <!-- Send Button -->
-                <div class="mt-4">
-                    <button 
-                        id="send-btn" 
-                        class="w-full bg-primary hover:bg-primary/80 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                <div class="mt-4 flex gap-2">
+                    <button
+                        id="send-btn"
+                        class="flex-1 bg-primary hover:bg-primary/80 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                         disabled
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
                         Send Request
+                    </button>
+                    <button
+                        id="stop-btn"
+                        class="hidden px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        onclick="currentAbortController?.abort()"
+                    >
+                        Stop
                     </button>
                 </div>
             </div>
@@ -225,7 +267,9 @@
             messages: [],
             isLoading: false
         };
-        
+
+        let currentAbortController = null;
+
         // ============== DOM Elements ==============
         const elements = {
             agentSelect: document.getElementById('agent-select'),
@@ -242,7 +286,8 @@
             toggleSchemaBtn: document.getElementById('toggle-schema'),
             schemaPanel: document.getElementById('schema-panel'),
             closeSchemaBtn: document.getElementById('close-schema'),
-            schemaContent: document.getElementById('schema-content')
+            schemaContent: document.getElementById('schema-content'),
+            stopBtn: document.getElementById('stop-btn')
         };
         
         // ============== API Functions ==============
@@ -280,7 +325,11 @@
         async function sendStreamingRequest(formData) {
             console.log('🚀🚀🚀 STREAMING v3 - NEW CODE LOADED 🚀🚀🚀');
             console.log('🚀 Starting streaming request...');
-            
+
+            currentAbortController = new AbortController();
+            elements.stopBtn.classList.remove('hidden');
+            elements.sendBtn.classList.add('hidden');
+
             // Create a streaming events container
             const streamContainerId = showStreamingContainer();
             const events = [];
@@ -294,7 +343,8 @@
                 console.log('📡 Fetching /api/debug/chat/stream');
                 const response = await fetch('/api/debug/chat/stream', {
                     method: 'POST',
-                    headers: { 
+                    signal: currentAbortController.signal,
+                    headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'text/event-stream'
                     },
@@ -491,15 +541,27 @@
                 finalizeStreamingContainer(streamContainerId, finalContent, events);
                 
             } catch (error) {
-                console.error('Streaming error:', error);
-                updateStreamingContainer(streamContainerId, 'error', {
-                    type: 'error',
-                    message: error.message
-                });
-                finalizeStreamingContainer(streamContainerId, `Error: ${error.message}`, []);
+                if (error.name === 'AbortError') {
+                    console.log('Stream aborted by user');
+                    updateStreamingContainer(streamContainerId, 'stopped', {
+                        type: 'stopped',
+                        message: 'Stopped by user'
+                    });
+                    finalizeStreamingContainer(streamContainerId, '[Stopped]', []);
+                } else {
+                    console.error('Streaming error:', error);
+                    updateStreamingContainer(streamContainerId, 'error', {
+                        type: 'error',
+                        message: error.message
+                    });
+                    finalizeStreamingContainer(streamContainerId, `Error: ${error.message}`, []);
+                }
             } finally {
                 state.isLoading = false;
                 updateSendButton();
+                elements.stopBtn.classList.add('hidden');
+                elements.sendBtn.classList.remove('hidden');
+                currentAbortController = null;
             }
         }
         
@@ -532,7 +594,7 @@
                                 </div>
                             </div>
                             <div id="${id}-content" class="hidden mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
-                                <div class="text-sm"></div>
+                                <div class="text-sm markdown-content"></div>
                             </div>
                         </div>
                     </div>
@@ -600,7 +662,14 @@
                         <span class="text-green-600 dark:text-green-300">Complete</span>
                     `;
                     break;
-                    
+
+                case 'stopped':
+                    eventEl.innerHTML = `
+                        <span class="text-orange-500 dark:text-orange-400">⏹</span>
+                        <span class="text-orange-600 dark:text-orange-300">Stopped by user</span>
+                    `;
+                    break;
+
                 case 'error':
                     eventEl.innerHTML = `
                         <span class="text-red-500 dark:text-red-400">❌</span>
@@ -626,16 +695,21 @@
         // This prevents batching and ensures smooth word-by-word appearance
         // Simple token queue for ChatGPT-like animated typing effect
         const tokenQueues = new Map(); // containerId -> array of tokens
-        
+        const rawContentMap = new Map(); // containerId -> accumulated raw markdown string
+
         // Track if processor is running for each container
         const processorRunning = new Map(); // containerId -> boolean
         
         function appendTokenWithAnimation(containerId, token) {
-            // Initialize queue for this container if needed
+            // Initialize queue and raw content accumulator for this container if needed
             if (!tokenQueues.has(containerId)) {
                 tokenQueues.set(containerId, []);
+                rawContentMap.set(containerId, '');
             }
-            
+
+            // Accumulate raw markdown text
+            rawContentMap.set(containerId, rawContentMap.get(containerId) + token);
+
             // Add token to queue
             tokenQueues.get(containerId).push(token);
             
@@ -679,12 +753,12 @@
                 if (placeholder) placeholder.remove();
             }
             
-            // Process one token from queue
-            const token = queue.shift();
-            
-            // Format and append the token
-            const formattedToken = escapeHtml(token).replace(/\n/g, '<br>');
-            contentElement.innerHTML += formattedToken;
+            // Process one token from queue (discard — raw text already accumulated)
+            queue.shift();
+
+            // Add markdown class and re-render accumulated raw text
+            contentElement.classList.add('markdown-content');
+            contentElement.innerHTML = marked.parse(rawContentMap.get(containerId) || '');
             
             scrollToBottom();
             
@@ -1151,10 +1225,10 @@
             const isError = msg.role === 'error';
             const hasLogs = isAssistant && msg.logs && msg.logs.length > 0;
             
-            // Format content with markdown-style bold
-            const formattedContent = msg.content
-                .replace(/\*\*(.+?)\*\*/g, '<strong class="text-primary">$1</strong>')
-                .replace(/\n/g, '<br>');
+            // Render content as markdown for assistant messages, plain text for user
+            const formattedContent = isAssistant
+                ? marked.parse(msg.content || '')
+                : escapeHtml(msg.content || '').replace(/\n/g, '<br>');
             
             // Build logs section if available
             let logsHtml = '';
@@ -1210,7 +1284,7 @@
                             }
                         </div>
                         <div class="${msg.role === 'user' ? 'bg-primary/20 border border-primary/30' : isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-gray-700 border border-gray-600'} rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'}">
-                            <div class="text-sm">${formattedContent}</div>
+                            <div class="text-sm ${isAssistant ? 'markdown-content' : ''}">${formattedContent}</div>
                             <p class="text-xs text-gray-500 mt-2">${msg.timestamp}</p>
                             ${logsHtml}
                         </div>

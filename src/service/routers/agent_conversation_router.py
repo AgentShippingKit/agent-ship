@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sse_starlette.sse import EventSourceResponse
@@ -116,6 +118,10 @@ async def chat_stream(request: AgentChatRequest):
                 
                 stream_completed = True
                 
+            except (GeneratorExit, asyncio.CancelledError):
+                logger.info("Client disconnected, stream cancelled for %s", request.agent_name)
+                stream_completed = True
+                return
             except Exception as stream_error:
                 logger.exception("Error during agent chat_stream")
                 yield {
@@ -125,7 +131,7 @@ async def chat_stream(request: AgentChatRequest):
                         "message": str(stream_error)
                     })
                 }
-            
+
         except KeyError as e:
             logger.error(f"Agent not found: {e}")
             yield {

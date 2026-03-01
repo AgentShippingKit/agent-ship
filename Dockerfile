@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install pipenv
 RUN pip install --no-cache-dir pipenv
 
-# Copy dependency files
-COPY Pipfile Pipfile.lock ./
+# Copy dependency files and pyproject.toml (needed for editable install)
+COPY Pipfile Pipfile.lock pyproject.toml ./
+COPY src ./src
 
 # Install dependencies
 RUN pipenv install --deploy --system

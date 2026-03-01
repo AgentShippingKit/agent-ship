@@ -73,9 +73,6 @@ class AgentDiscovery:
                     issubclass(attr, BaseAgent) and 
                     attr != BaseAgent):
                     
-                    # Generate agent name
-                    agent_name = self._generate_agent_name(attr_name)
-                    
                     # Try to find a config file
                     config_path = self._find_config_file(file_path)
                     config = None
@@ -84,7 +81,13 @@ class AgentDiscovery:
                             config = AgentConfig.from_yaml(config_path)
                         except Exception as e:
                             logger.warning(f"Could not load config from {config_path}: {e}")
-                    
+
+                    # Prefer agent_name from YAML config; fall back to class-name derivation
+                    if config and config.agent_name:
+                        agent_name = config.agent_name
+                    else:
+                        agent_name = self._generate_agent_name(attr_name)
+
                     self.registry.register_agent(agent_name, attr, config)
                     logger.info(f"Auto-registered agent '{agent_name}' from {file_path}")
         

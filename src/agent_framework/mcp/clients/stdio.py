@@ -35,7 +35,7 @@ class StdioMCPClient(BaseMCPClient):
     def __init__(self, config: MCPServerConfig) -> None:
         if config.transport != MCPTransport.STDIO or not config.command:
             raise ValueError("StdioMCPClient requires transport=stdio and command")
-        self._config = config
+        super().__init__(config)
         self._session = None  # The actual session returned from __aenter__
         self._session_cm = None  # The ClientSession context manager
         self._stdio_context = None  # async context manager, held for lifecycle
@@ -44,10 +44,10 @@ class StdioMCPClient(BaseMCPClient):
 
     def _server_params(self) -> StdioServerParameters:
         """Build MCP SDK stdio parameters from our config."""
-        cmd_list = self._config.command or []
+        cmd_list = self.config.command or []
         command = cmd_list[0] if cmd_list else ""
         args = cmd_list[1:] if len(cmd_list) > 1 else []
-        env = self._config.env or None
+        env = self.config.env or None
         return StdioServerParameters(
             command=command,
             args=args,
@@ -74,18 +74,18 @@ class StdioMCPClient(BaseMCPClient):
         # Check if we're connected AND in the same event loop
         if self._is_connected and self._session is not None:
             if self._event_loop is current_loop:
-                logger.debug("Session already connected for %s, reusing", self._config.id)
+                logger.debug("Session already connected for %s, reusing", self.config.id)
                 return self._session
             else:
                 # Event loop changed - need to reconnect
                 logger.warning(
                     "Event loop changed for %s (old=%s, new=%s), reconnecting...",
-                    self._config.id, id(self._event_loop), id(current_loop)
+                    self.config.id, id(self._event_loop), id(current_loop)
                 )
                 await self.close()
                 self._is_connected = False
 
-        logger.info("Connecting to STDIO MCP server %s...", self._config.id)
+        logger.info("Connecting to STDIO MCP server %s...", self.config.id)
         params = self._server_params()
         logger.debug("Server params: command=%s, args=%s", params.command, params.args)
 
@@ -104,13 +104,13 @@ class StdioMCPClient(BaseMCPClient):
         await self._session.initialize()
         self._is_connected = True
         self._event_loop = current_loop  # Store the event loop for this connection
-        logger.info("MCP STDIO client connected and initialized for server %s", self._config.id)
+        logger.info("MCP STDIO client connected and initialized for server %s", self.config.id)
 
         return self._session
 
     async def list_tools(self) -> List[MCPToolInfo]:
         """Return tools from the server."""
-        logger.debug("Listing tools from MCP server %s", self._config.id)
+        logger.debug("Listing tools from MCP server %s", self.config.id)
         session = await self._ensure_connected()
         result = await session.list_tools()
 
@@ -154,7 +154,7 @@ class StdioMCPClient(BaseMCPClient):
         the connection was established. These are suppressed as they're
         harmless cleanup errors that don't affect functionality.
         """
-        logger.info("Closing MCP STDIO client for %s", self._config.id)
+        logger.info("Closing MCP STDIO client for %s", self.config.id)
 
         # Exit ClientSession context first
         if self._session_cm is not None:
@@ -164,9 +164,9 @@ class StdioMCPClient(BaseMCPClient):
             except RuntimeError as e:
                 # Suppress anyio cancel scope errors - harmless cleanup issues
                 if "cancel scope" not in str(e).lower():
-                    logger.warning("Error closing ClientSession for %s: %s", self._config.id, e)
+                    logger.warning("Error closing ClientSession for %s: %s", self.config.id, e)
             except Exception as e:
-                logger.warning("Error closing ClientSession for %s: %s", self._config.id, e)
+                logger.warning("Error closing ClientSession for %s: %s", self.config.id, e)
             finally:
                 self._session = None
                 self._session_cm = None
@@ -178,9 +178,9 @@ class StdioMCPClient(BaseMCPClient):
             except RuntimeError as e:
                 # Suppress anyio cancel scope errors - harmless cleanup issues
                 if "cancel scope" not in str(e).lower():
-                    logger.warning("Error closing stdio_client for %s: %s", self._config.id, e)
+                    logger.warning("Error closing stdio_client for %s: %s", self.config.id, e)
             except Exception as e:
-                logger.warning("Error closing stdio_client for %s: %s", self._config.id, e)
+                logger.warning("Error closing stdio_client for %s: %s", self.config.id, e)
             finally:
                 self._stdio_context = None
 
