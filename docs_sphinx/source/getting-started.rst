@@ -21,8 +21,8 @@ The easiest way to get started. Docker handles everything automatically.
 
 .. code-block:: bash
 
-   git clone https://github.com/harshuljain13/ship-ai-agents.git
-   cd ship-ai-agents/ai/ai-ecosystem
+   git clone https://github.com/Agent-Ship/agent-ship.git
+   cd agent-ship
 
 2. Run the setup:
 
@@ -74,8 +74,8 @@ For development without Docker.
 
 .. code-block:: bash
 
-   git clone https://github.com/harshuljain13/ship-ai-agents.git
-   cd ship-ai-agents/ai/ai-ecosystem
+   git clone https://github.com/Agent-Ship/agent-ship.git
+   cd agent-ship
 
 2. Run setup script:
 
@@ -161,7 +161,7 @@ Create Your First Agent
    class MyAgent(BaseAgent):
        def __init__(self):
            super().__init__(
-               _caller_file=__file__,
+               config_path=resolve_config_path(relative_to=__file__),
                input_schema=TextInput,
                output_schema=TextOutput
            )

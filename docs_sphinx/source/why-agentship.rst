@@ -45,6 +45,20 @@ Think of it this way:
 What AgentShip Provides
 -----------------------
 
+0. **MCP Tool Integration**
+   ~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Connect agents to any MCP server — PostgreSQL, GitHub, Filesystem, Slack — with two lines of YAML:
+
+   .. code-block:: yaml
+
+      mcp:
+        servers:
+          - postgres   # STDIO local server
+          - github     # HTTP/OAuth remote server
+
+   Tools are discovered automatically and documented for the LLM. No manual wiring.
+
 1. **Zero-Configuration Agent Discovery**
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -168,15 +182,15 @@ LangGraph
 
 **LangGraph**: State machine for agent workflows
 - ✅ Powerful for complex flows
-- ✅ Visual workflow design
+- ✅ True token-by-token streaming
 - ❌ Requires integration work
 - ❌ No production infrastructure
 
-**AgentShip**: Production layer for LangGraph
-- ✅ Use LangGraph for workflows
-- ✅ AgentShip provides API
-- ✅ AgentShip handles sessions
-- ✅ Production-ready
+**AgentShip + LangGraph**: Built-in as a first-class engine
+- ✅ Select LangGraph per agent: ``execution_engine: langgraph``
+- ✅ AgentShip provides the REST API and session layer
+- ✅ Token-by-token SSE streaming out of the box
+- ✅ Works with all LiteLLM-supported LLM providers
 
 LangChain
 ~~~~~~~~~
@@ -200,9 +214,10 @@ Use AgentShip when you want to:
 
 ✅ **Ship agents quickly** - Get to production in minutes, not weeks
 ✅ **Focus on agent logic** - Not infrastructure setup
-✅ **Need a REST API** - Expose agents via HTTP
+✅ **Need a REST API** - Expose agents via HTTP with streaming
 ✅ **Want auto-discovery** - No manual registration
-✅ **Deploy easily** - One-command deployment
+✅ **Connect external tools** - MCP integration (PostgreSQL, GitHub, Slack, …)
+✅ **Deploy easily** - One-command Docker or Heroku deployment
 ✅ **Monitor agents** - Built-in observability
 
 Don't use AgentShip if you:

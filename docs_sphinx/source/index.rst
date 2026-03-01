@@ -6,124 +6,104 @@
        <img src="/docs/_static/docs-header@3x.png" alt="AgentShip Documentation" style="width: 100%; max-width: 960px;" />
    </div>
 
-Welcome to AgentShip's documentation!
-=====================================
+AgentShip
+=========
 
 **Build and deploy AI agents in minutes, not weeks.**
 
-AgentShip is a production-ready framework for building AI agents. No infrastructure complexity. Just focus on building intelligent solutions.
+AgentShip is an open-source production framework for AI agents. It sits on top of Google ADK and LangGraph — giving you the REST API, session memory, observability, streaming, and MCP tool integration that these engines don't provide on their own.
 
-What is AgentShip?
-==================
+Drop in a YAML file and a Python class. AgentShip does the rest.
 
-AgentShip is a comprehensive framework that simplifies the development, deployment, and operation of AI agents. Built on top of Google's Agent Development Kit (ADK), it provides:
+.. code-block:: bash
 
-- **Auto-discovery**: Create agents, they're automatically registered
-- **Multiple LLM providers**: OpenAI, Google, Anthropic support
-- **Production-ready**: FastAPI, PostgreSQL, observability built-in
-- **Three agent patterns**: Orchestrator, single-agent, tool-based
-- **Session management**: Persistent conversations with PostgreSQL or in-memory storage
-- **Observability**: Built-in tracing, metrics, and logging with Opik
+   git clone https://github.com/Agent-Ship/agent-ship.git
+   cd agent-ship
+   make docker-setup
+   # ✅  API ready at http://localhost:7001
 
-Architecture
+----
+
+What You Get
 ============
 
-AgentShip's architecture is designed for production-scale AI agent deployment:
+- **Auto-discovery** — agents register themselves from YAML, no manual wiring
+- **Dual engines** — Google ADK or LangGraph, configured per agent in YAML
+- **MCP integration** — STDIO and HTTP/OAuth transports for any MCP server
+- **Token-by-token streaming** — real SSE streaming with LangGraph + LiteLLM
+- **Session memory** — PostgreSQL-backed conversations, zero config
+- **Observability** — Opik tracing and metrics out of the box
+- **Debug UI** — browser-based chat interface at ``/debug-ui`` with stop button
+- **One-command Docker setup** — ``make docker-setup`` starts everything
 
-.. image:: _static/Architecture.png
-   :alt: AgentShip System Architecture
-   :align: center
-   :width: 100%
-
-The system includes:
-
-- **FastAPI Entrypoint**: HTTP, SSE, and WebSocket support for various communication protocols
-- **Main Ecosystem**: YAML-based agent configurations, LLM sidecar, observability, and guardrails
-- **LLM Tooling Layer**: Utils, tools, and MCP (Model Context Protocol) integration
-- **Memory Layer**: Session memory stores, external context stores, caching, and file storage
-- **Data Ingestion Pipeline**: Processes data from various sources into the memory layer
-- **Observability**: OPIK & Langfuse integration for monitoring, evaluation, and prompt versioning
-- **LLM Providers**: Support for GPT, Gemini, Ollama, and Claude
-- **Testing**: Debug UI, Postman collections, and unit tests
+----
 
 Quick Start
 ===========
 
-Get started in 2 minutes:
-
 .. code-block:: bash
 
-   git clone https://github.com/harshuljain13/ship-ai-agents.git
-   cd ship-ai-agents/ai/ai-ecosystem
+   # 1. Clone and start
+   git clone https://github.com/Agent-Ship/agent-ship.git
+   cd agent-ship
    make docker-setup
 
-That's it! Open http://localhost:7001/swagger and you're ready to build.
+   # 2. Add your LLM key to .env
+   echo "OPENAI_API_KEY=sk-..." >> .env
+   make docker-restart
 
-The setup script will:
-- Check Docker installation
-- Create `.env` file
-- Prompt for your API key
-- Start everything (API + PostgreSQL)
-- Show URLs for API documentation
+   # 3. Open the Debug UI and start chatting
+   open http://localhost:7001/debug-ui
+
+Your first agent is included — talk to it immediately. To create your own, see :doc:`user-guides/getting-started/quickstart`.
+
+----
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: Getting Started
 
    why-agentship
    user-guides/getting-started/quickstart
    user-guides/getting-started/installation
    user-guides/getting-started/configuration
    user-guides/docker-setup
-   user-guides/building-agents/patterns/orchestrator
-   user-guides/building-agents/patterns/single-agent
-   user-guides/building-agents/patterns/tool-pattern
-   user-guides/building-agents/tools
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Building Agents
+
+   user-guides/building-agents/overview
    user-guides/building-agents/agent-configuration
-   api/index
-   api/base-agent
-   api/agent-config
-   api/models
-   api/modules
+   user-guides/building-agents/base-agent
+   user-guides/building-agents/tools
+   user-guides/building-agents/patterns/single-agent
+   user-guides/building-agents/patterns/orchestrator
+   user-guides/building-agents/patterns/tool-pattern
+
+.. toctree::
+   :maxdepth: 1
+   :caption: MCP Integration
+
+   user-guides/mcp-integration
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Deployment
+
+   user-guides/deployment/overview
    user-guides/deployment/heroku
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Testing
+
+   user-guides/testing/overview
    user-guides/testing/writing-tests
-   testing-with-postman
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+
+   api/index
    contributing
-
-Key Concepts
-============
-
-Agents
-------
-
-Agents are the core building blocks of AgentShip. Each agent:
-- Has a unique name and configuration
-- Uses a specific LLM provider (OpenAI, Google, Anthropic)
-- Can have custom input/output schemas
-- Supports tools for extended functionality
-- Maintains conversation sessions
-
-Sessions
---------
-
-Sessions track conversation history:
-- **Database sessions**: Persistent storage in PostgreSQL
-- **In-memory sessions**: Temporary storage for testing
-- Sessions are automatically created on first use
-- Each session is scoped to a user_id and session_id
-
-Agent Patterns
---------------
-
-AgentShip supports three patterns:
-
-1. **Single Agent**: Simple, focused agents for specific tasks
-2. **Orchestrator**: Coordinate multiple agents for complex workflows
-3. **Tool Pattern**: Agents with custom tools for extended capabilities
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

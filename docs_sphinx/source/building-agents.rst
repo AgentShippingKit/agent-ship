@@ -71,7 +71,7 @@ Creating a Basic Agent
    class MyAgent(BaseAgent):
        def __init__(self):
            super().__init__(
-               _caller_file=__file__,
+               config_path=resolve_config_path(relative_to=__file__),
                input_schema=TextInput,
                output_schema=TextOutput
            )

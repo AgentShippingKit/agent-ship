@@ -137,7 +137,20 @@ tools:
 
 Tool order matters and is preserved from the YAML configuration.
 
-> **Note**: Tool calling is currently only supported in the ADK engine. LangGraph engine does not yet support tools.
+### MCP Tools
+
+Reference any MCP server defined in `.mcp.settings.json`:
+
+```yaml
+mcp:
+  servers:
+    - postgres      # STDIO: shared client
+    - github        # HTTP/OAuth: per-agent client
+```
+
+See [MCP Integration](../mcp-integration.md) for setup details.
+
+> **Note**: Custom function/agent tools are supported in the ADK engine. Both engines support MCP tools — see [MCP Integration](../mcp-integration.md).
 
 ## Memory Configuration
 

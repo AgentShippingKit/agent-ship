@@ -10,7 +10,7 @@ from src.all_agents.base_agent import BaseAgent
 class DatabaseAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            _caller_file=__file__,
+            config_path=resolve_config_path(relative_to=__file__),
         )
 ```
 

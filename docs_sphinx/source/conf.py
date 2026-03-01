@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AgentShip'
-copyright = '2025, AgentShip Contributors'
+copyright = '2026, AgentShip Contributors'
 author = 'AgentShip Contributors'
 
 version = '1.0.0'

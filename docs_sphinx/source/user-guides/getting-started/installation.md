@@ -16,8 +16,8 @@ This guide is for developers who want to run AgentShip locally without Docker.
 ### Automated Setup (Recommended)
 
 ```bash
-git clone https://github.com/harshuljain13/ship-ai-agents.git
-cd ship-ai-agents/ai/ai-ecosystem
+git clone https://github.com/Agent-Ship/agent-ship.git
+cd agent-ship
 make setup
 ```
 
@@ -34,8 +34,8 @@ If you prefer manual setup:
 
 ```bash
 # 1. Clone and navigate
-git clone https://github.com/harshuljain13/ship-ai-agents.git
-cd ship-ai-agents/ai/ai-ecosystem
+git clone https://github.com/Agent-Ship/agent-ship.git
+cd agent-ship
 
 # 2. Install dependencies
 pipenv install --dev

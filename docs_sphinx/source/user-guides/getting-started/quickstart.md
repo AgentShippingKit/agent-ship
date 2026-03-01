@@ -1,118 +1,118 @@
 # Quick Start
 
-Get AgentShip running in under 5 minutes.
+Get AgentShip running and your first agent deployed in under 5 minutes.
 
-## Step 1: Clone and Setup
+## Step 1: Clone and Start
 
 ```bash
-git clone https://github.com/harshuljain13/ship-ai-agents.git
-cd ship-ai-agents/ai/ai-ecosystem
+git clone https://github.com/Agent-Ship/agent-ship.git
+cd agent-ship
 make docker-setup
 ```
 
-The script will:
+The setup script will:
 - ✅ Check Docker installation
-- ✅ Create `.env` file automatically
-- ✅ Set up PostgreSQL
-- ✅ Build and start everything
-- ✅ Wait for services to be ready
+- ✅ Create a `.env` file and prompt for your API key
+- ✅ Start the API server and PostgreSQL
+- ✅ Print service URLs when ready
 
-**Done!** Open http://localhost:7001/docs
+**Services available at:**
+- **API / Swagger**: http://localhost:7001/swagger
+- **Debug UI**: http://localhost:7001/debug-ui
 
-## Step 2: Add Your API Key
+## Step 2: Chat with a Built-In Agent
 
-Edit `.env` and add at least one LLM API key:
+Open the Debug UI at http://localhost:7001/debug-ui, pick any agent, and start chatting. No extra setup needed.
+
+Or use curl:
 
 ```bash
-nano .env
-```
-
-Add:
-```env
-OPENAI_API_KEY=your-actual-key-here
-```
-
-Then restart:
-```bash
-make docker-down
-make docker-up
+curl -X POST http://localhost:7001/api/agents/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_name": "translation_agent",
+    "user_id": "demo",
+    "session_id": "demo-session",
+    "query": {"text": "Hello!", "from_language": "English", "to_language": "Spanish"},
+    "features": []
+  }'
 ```
 
 ## Step 3: Create Your First Agent
 
-### Create the directory
+### 1. Create the directory
 
 ```bash
 mkdir -p src/all_agents/my_agent
-cd src/all_agents/my_agent
 ```
 
-### Add configuration (`main_agent.yaml`)
+### 2. Add `main_agent.yaml`
 
 ```yaml
 agent_name: my_agent
 llm_provider_name: openai
 llm_model: gpt-4o
 temperature: 0.4
+execution_engine: adk   # or langgraph
 description: My helpful assistant
 instruction_template: |
   You are a helpful assistant that answers questions clearly and concisely.
 ```
 
-### Add code (`main_agent.py`)
+### 3. Add `main_agent.py`
 
 ```python
 from src.all_agents.base_agent import BaseAgent
 from src.service.models.base_models import TextInput, TextOutput
+from src.agent_framework.utils.path_utils import resolve_config_path
 
 class MyAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            _caller_file=__file__,
+            config_path=resolve_config_path(relative_to=__file__),
             input_schema=TextInput,
-            output_schema=TextOutput
+            output_schema=TextOutput,
         )
 ```
 
-### Test it!
-
-Restart the server (if needed), then:
+### 4. Restart and test
 
 ```bash
-curl -X POST "http://localhost:7001/api/agents/chat" \
+make docker-restart
+```
+
+Your agent is automatically discovered — no registration needed.
+
+```bash
+curl -X POST http://localhost:7001/api/agents/chat \
   -H "Content-Type: application/json" \
   -d '{
     "agent_name": "my_agent",
-    "user_id": "test-user",
-    "session_id": "test-session",
-    "query": "Hello, how are you?",
+    "user_id": "demo",
+    "session_id": "s1",
+    "query": {"text": "Hello!"},
     "features": []
   }'
 ```
 
-**That's it!** Your agent is automatically discovered and ready to use.
-
 ---
 
-## 🐍 Local Development (Alternative)
-
-If you prefer local development without Docker:
+## Local Development (No Docker)
 
 ```bash
-make setup
-make dev
+pipenv install
+cp .env.example .env   # add your API key
+make dev               # starts on http://localhost:7001
 ```
 
-See [Installation Guide](installation.md) for details.
+---
+
+## Next Steps
+
+- [Agent Configuration](../building-agents/agent-configuration.md) — YAML fields, engines, streaming modes
+- [Agent Patterns](../building-agents/patterns/single-agent.md) — single agent, orchestrator, tool pattern
+- [MCP Integration](../mcp-integration.md) — connect PostgreSQL, GitHub, and other MCP servers
 
 ---
 
-## 📚 Next Steps
-
-- Learn about [Agent Patterns](../building-agents/patterns/single-agent.md)
-- Add [Tools](../building-agents/tools.md) to your agent
-- Read the [Full Documentation](../index.md)
-
----
-
-**Questions?** Check the [Full Documentation](../index.md) or [open an issue](https://github.com/harshuljain13/ship-ai-agents/issues).
+**Questions?** [Open an issue](https://github.com/Agent-Ship/agent-ship/issues) on GitHub.

@@ -23,8 +23,8 @@ That's it! No Python, pipenv, or PostgreSQL installation needed.
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/harshuljain13/ship-ai-agents.git
-cd ship-ai-agents/ai/ai-ecosystem
+git clone https://github.com/Agent-Ship/agent-ship.git
+cd agent-ship
 make docker-setup
 ```
 
