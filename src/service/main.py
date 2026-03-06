@@ -1,6 +1,7 @@
 '''
 This is the main file for the backend.
 '''
+import asyncio
 import logging
 import os
 import uvicorn
@@ -11,11 +12,40 @@ from dotenv import load_dotenv
 from src.agent_framework.registry import discover_agents
 from src.service.routers.rest_router import router as rest_router
 from src.service.routes.mcp_auth import router as mcp_auth_router
-from debug_ui.router import router as debug_router
+from studio.router import router as debug_router
 load_dotenv()
 
 # logger
 logger = logging.getLogger(__name__)
+
+
+def _mcp_gc_exception_handler(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """Suppress harmless anyio cancel scope errors from MCP STDIO GC cleanup.
+
+    When the asyncio event loop changes between web requests, MCP STDIO clients
+    reconnect. The old stdio_client async generator is then GC'd, but anyio's
+    TaskGroup cleanup fails because it's in a different task. This is harmless —
+    the connection is already superseded — but asyncio logs it at ERROR level.
+    We downgrade it to DEBUG here.
+    """
+    msg = context.get("message", "")
+    exc = context.get("exception")
+    if (
+        "closing of asynchronous generator" in msg
+        and isinstance(exc, RuntimeError)
+        and "cancel scope" in str(exc).lower()
+    ):
+        logger.debug("MCP STDIO GC cleanup (harmless): %s", exc)
+        return
+    loop.default_exception_handler(context)
+
+
+# Install the exception handler immediately so it catches any early-startup GC
+try:
+    asyncio.get_event_loop().set_exception_handler(_mcp_gc_exception_handler)
+except RuntimeError:
+    pass  # No running loop at import time — handler is also set in startup event
+
 
 # Get project root for static files (needed early for favicon)
 # Use absolute path to ensure it works regardless of where the script is run from
@@ -169,6 +199,12 @@ if os.path.exists(branding_path):
 else:
     logger.warning(f"⚠️  Branding assets not found at {branding_path}")
 
+@app.on_event("startup")
+async def _install_exception_handler() -> None:
+    """Reinstall the MCP GC exception handler on the ASGI event loop."""
+    asyncio.get_event_loop().set_exception_handler(_mcp_gc_exception_handler)
+
+
 # Ensure agents are discovered (idempotent)
 # Uses AGENT_DIRECTORIES env var or defaults to framework agents only
 discover_agents()
@@ -181,28 +217,36 @@ app.include_router(mcp_auth_router)
 # Include Debug API router
 app.include_router(debug_router, prefix="/api/debug", tags=["debug"])
 
-# Serve Debug UI static files
-debug_ui_enabled = os.environ.get("DEBUG_UI_ENABLED", "true").lower() == "true"
+# Serve AgentShip Studio (formerly Debug UI)
+debug_ui_enabled = os.environ.get("STUDIO_ENABLED", os.environ.get("DEBUG_UI_ENABLED", "true")).lower() == "true"
 if debug_ui_enabled:
-    # debug_ui/ is at project root level - use absolute path
-    static_path = os.path.abspath(os.path.join(project_root, "debug_ui", "static"))
+    # studio/ is at project root level - use absolute path
+    static_path = os.path.abspath(os.path.join(project_root, "studio", "static"))
     if os.path.exists(static_path):
-        # Serve static files for debug UI
-        app.mount("/debug-ui/static", StaticFiles(directory=static_path), name="debug-static")
-        
-        @app.get("/debug-ui", response_class=HTMLResponse)
-        @app.get("/debug-ui/", response_class=HTMLResponse)
-        async def debug_ui():
-            """Serve the Debug UI with no-cache headers for development."""
+        # Serve static files under /studio/static
+        app.mount("/studio/static", StaticFiles(directory=static_path), name="studio-static")
+
+        @app.get("/studio", response_class=HTMLResponse)
+        @app.get("/studio/", response_class=HTMLResponse)
+        async def studio_ui():
+            """Serve AgentShip Studio with no-cache headers for development."""
             response = FileResponse(os.path.join(static_path, "index.html"))
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
-        
-        logger.info("🔧 Debug UI mounted at /debug-ui")
+
+        from fastapi.responses import RedirectResponse
+
+        @app.get("/debug-ui")
+        @app.get("/debug-ui/")
+        async def debug_ui_redirect():
+            """Redirect legacy /debug-ui to /studio."""
+            return RedirectResponse(url="/studio", status_code=301)
+
+        logger.info("🎨 AgentShip Studio mounted at /studio (legacy /debug-ui → 301 redirect)")
     else:
-        logger.warning(f"Debug UI static files not found at {static_path}")
+        logger.warning(f"AgentShip Studio static files not found at {static_path}")
 
 # Prometheus metrics (optional - install prometheus-fastapi-instrumentator)
 # Uncomment to enable standard Prometheus metrics including memory/CPU

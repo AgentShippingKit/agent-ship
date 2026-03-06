@@ -34,7 +34,7 @@ services:
       # Mount source code for development (hot-reload)
       - ./src:/app/src
       - ./tests:/app/tests
-      - ./debug_ui:/app/debug_ui
+      - ./studio:/app/studio
       - ./.mcp.settings.json:/app/.mcp.settings.json
     depends_on:
       postgres:
@@ -53,7 +53,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   # PostgreSQL Database for Session Storage
-  # Note: Debug UI is now mounted at /debug-ui on the main agentship service
+  # Note: Studio is mounted at /studio on the main agentship service
   postgres:
     image: postgres:16-alpine
     container_name: agentship-postgres

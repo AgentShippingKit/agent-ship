@@ -1,6 +1,6 @@
 # MCP Integration
 
-AgentShip has built-in support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), letting agents connect to any MCP server as a tool source. Works with both ADK and LangGraph engines.
+MCP (Model Context Protocol) is the **Tools** layer in AgentShip's four pluggable architecture layers. Declare servers in YAML — AgentShip connects, discovers tools, and injects LLM-ready documentation into the system prompt automatically. Works with both ADK and LangGraph engines, no code changes needed.
 
 ## Transports
 

@@ -1,285 +1,145 @@
 Why AgentShip?
 ==============
 
-With frameworks like Google ADK, CrewAI, LangGraph, LangChain, and others available, you might wonder: **Why AgentShip?**
+The Origin
+----------
 
-The answer is simple: **AgentShip is the production layer that other frameworks don't provide.**
+   *"I spent two days building an agent. It worked perfectly. Then I tried to ship it. Two weeks later — after writing FastAPI endpoints, setting up PostgreSQL sessions, wiring observability, writing Docker configs — the agent still did the exact same thing it did on day two. I'd spent 12 days wrapping it in plumbing. This happened three times. By the third agent, I stopped and built it once."*
 
-The Problem
------------
+   — Harshul Jain, Creator of AgentShip
 
-Most agent frameworks focus on **building** agents, not **shipping** them:
+Two Problems
+------------
 
-- ✅ **Google ADK**: Great for building agents, but you need to build infrastructure
-- ✅ **CrewAI**: Excellent for multi-agent workflows, but requires setup
-- ✅ **LangGraph**: Powerful for complex flows, but needs integration work
-- ✅ **LangChain**: Comprehensive toolkit, but lots of configuration
+**Problem 1: Production plumbing**
 
-**The gap**: These frameworks help you **build** agents, but you still need to:
-- Set up a REST API
-- Configure session management
-- Set up observability
-- Handle deployment
-- Manage infrastructure
-- Write boilerplate code
+Every team building AI agents re-builds the same infrastructure from scratch:
 
-AgentShip's Role
-----------------
+- REST API + request validation
+- Session storage (PostgreSQL or Redis)
+- Observability & tracing
+- MCP tool integration
+- Docker + deployment config
+- Streaming with error handling
 
-AgentShip is **not a replacement** for these frameworks. Instead, it's a **production-ready layer** that sits on top of them.
+Result: ~2,000 lines of infrastructure code and two weeks of work per agent. Zero product value shipped.
 
-Think of it this way:
+**Problem 2: Framework lock-in**
+
+50+ AI agent frameworks exist. Teams pick one, build deep, then hit limits:
+
+- Need a different LLM? Framework may not support it.
+- Framework B has the feature you need? 3–6 month rewrite.
+- Scaling limits, missing MCP support, observability gaps.
+
+Result: Architecture decisions made on day one become impossible to change. Every new requirement compounds the lock-in tax.
 
 .. code-block:: text
 
-   ┌─────────────────────────────────────┐
-   │     Your Application/Agents         │
-   ├─────────────────────────────────────┤
-   │     AgentShip (Production Layer)    │  ← What AgentShip provides
-   ├─────────────────────────────────────┤
-   │     Google ADK / LangChain / etc.   │  ← What other frameworks provide
-   ├─────────────────────────────────────┤
-   │     LLM Providers (OpenAI, etc.)    │
-   └─────────────────────────────────────┘
+   Without AgentShip:       Your Agent Logic
+                                 ↕  tightly coupled
+                            LangGraph / ADK / CrewAI
+                                 ↕  tightly coupled
+                           Memory · Observability · Tools
 
-What AgentShip Provides
+   With AgentShip:          Your Agent Logic (unchanged)
+                                 ↕  talks to abstraction
+                              AgentShip Interface
+                                 ↕  pluggable
+                      ADK  |  LangGraph  |  Future Engines
+                                 ↕  config-driven
+                      Memory  ·  Observability  ·  MCP Tools
+
+The One-Line Definition
 -----------------------
 
-0. **MCP Tool Integration**
-   ~~~~~~~~~~~~~~~~~~~~~~~~
+**AgentShip is LiteLLM for agent runtimes.**
 
-   Connect agents to any MCP server — PostgreSQL, GitHub, Filesystem, Slack — with two lines of YAML:
+LiteLLM unified LLM provider APIs behind a single ``completion()`` call — swap OpenAI for Anthropic with one config change. AgentShip does the same at the agent runtime layer: ``BaseAgent`` is the unified interface, and swapping ADK for LangGraph is one YAML line. But AgentShip goes further — it includes the full production stack that LiteLLM never needed to build.
 
-   .. code-block:: yaml
+The Engine Swap
+---------------
 
-      mcp:
-        servers:
-          - postgres   # STDIO local server
-          - github     # HTTP/OAuth remote server
+The whole value proposition in one diff:
 
-   Tools are discovered automatically and documented for the LLM. No manual wiring.
+.. code-block:: diff
 
-1. **Zero-Configuration Agent Discovery**
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   # main_agent.yaml — the entire change required
+   - execution_engine: adk
+   + execution_engine: langgraph
 
-   **Other frameworks**: Manual registration, import statements, configuration files
+**Your Python class is unchanged. Your tools are unchanged. Your prompts are unchanged.**
 
-   **AgentShip**: Create a directory and two files → Agent is automatically discovered
+Impact
+------
 
-   .. code-block:: bash
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
 
-      # Just create these files:
-      src/all_agents/my_agent/
-      ├── main_agent.yaml
-      └── main_agent.py
-      
-      # That's it! Agent is registered automatically.
+   * - Metric
+     - Without AgentShip
+     - With AgentShip
+   * - Time to production (per agent)
+     - 2 weeks
+     - **1 hour**
+   * - Infrastructure code
+     - ~2,000 lines
+     - **~50 lines** (agent logic only)
+   * - Observability setup
+     - 2–3 days
+     - **0** (built-in)
+   * - Session management
+     - 2–3 days
+     - **0** (built-in)
+   * - Engine migration
+     - 3–6 months, 50–80% rewrite
+     - **One line in YAML**
+   * - MCP tool integration
+     - Manual per-framework
+     - **Config declaration, auto-discovered**
 
-2. **Production-Ready REST API**
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   **Other frameworks**: You build the API yourself
-
-   **AgentShip**: REST API with FastAPI, auto-generated docs, type-safe endpoints
-
-   - ``POST /api/agents/chat`` - Chat with any agent
-   - ``GET /health`` - Health checks
-   - Auto-generated Swagger/ReDoc docs
-   - Type-safe request/response models
-
-3. **Automatic Session Management**
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   **Other frameworks**: You implement session handling
-
-   **AgentShip**: Automatic session management with:
-   - PostgreSQL for persistent conversations
-   - In-memory for testing
-   - Automatic session creation
-   - Conversation history tracking
-
-4. **One-Command Setup**
-   ~~~~~~~~~~~~~~~~~~~~~~
-
-   **Other frameworks**: Multiple setup steps, configuration files, dependencies
-
-   **AgentShip**: One command gets everything running
-
-   .. code-block:: bash
-
-      make docker-setup
-      # ✅ Docker installed
-      # ✅ Database configured
-      # ✅ API running
-      # ✅ Everything ready
-
-5. **Built-in Observability**
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   **Other frameworks**: You add observability yourself
-
-   **AgentShip**: Opik integration for:
-   - Tracing
-   - Metrics
-   - Logging
-   - Performance monitoring
-
-6. **Deployment Ready**
-   ~~~~~~~~~~~~~~~~~~~~
-
-   **Other frameworks**: You figure out deployment
-
-   **AgentShip**: One-command deployment to Heroku
-
-   .. code-block:: bash
-
-      make heroku-deploy
-      # ✅ App created
-      # ✅ Database set up
-      # ✅ Environment configured
-      # ✅ Deployed
-
-Comparison with Other Frameworks
----------------------------------
-
-Google ADK
-~~~~~~~~~~
-
-**Google ADK**: Low-level agent building framework
-- ✅ Excellent for building agents
-- ❌ No REST API
-- ❌ No session management
-- ❌ No deployment scripts
-- ❌ Requires infrastructure setup
-
-**AgentShip**: Production layer on top of Google ADK
-- ✅ Uses Google ADK for agent logic
-- ✅ Adds REST API
-- ✅ Adds session management
-- ✅ Adds deployment
-- ✅ Adds observability
-
-**Use together**: Google ADK for agent logic, AgentShip for production infrastructure.
-
-CrewAI
-~~~~~~
-
-**CrewAI**: Multi-agent orchestration framework
-- ✅ Great for complex workflows
-- ✅ Agent collaboration
-- ❌ Requires setup and configuration
-- ❌ No built-in API
-- ❌ No deployment scripts
-
-**AgentShip**: Can integrate CrewAI agents
-- ✅ Use CrewAI for orchestration
-- ✅ AgentShip provides API layer
-- ✅ AgentShip handles deployment
-- ✅ Best of both worlds
-
-LangGraph
-~~~~~~~~~
-
-**LangGraph**: State machine for agent workflows
-- ✅ Powerful for complex flows
-- ✅ True token-by-token streaming
-- ❌ Requires integration work
-- ❌ No production infrastructure
-
-**AgentShip + LangGraph**: Built-in as a first-class engine
-- ✅ Select LangGraph per agent: ``execution_engine: langgraph``
-- ✅ AgentShip provides the REST API and session layer
-- ✅ Token-by-token SSE streaming out of the box
-- ✅ Works with all LiteLLM-supported LLM providers
-
-LangChain
-~~~~~~~~~
-
-**LangChain**: Comprehensive LLM toolkit
-- ✅ Huge ecosystem
-- ✅ Many integrations
-- ❌ Lots of configuration
-- ❌ Can be complex
-
-**AgentShip**: Simplified production layer
-- ✅ Use LangChain components
-- ✅ AgentShip simplifies deployment
-- ✅ AgentShip provides structure
-- ✅ Less boilerplate
-
-When to Use AgentShip
----------------------
-
-Use AgentShip when you want to:
-
-✅ **Ship agents quickly** - Get to production in minutes, not weeks
-✅ **Focus on agent logic** - Not infrastructure setup
-✅ **Need a REST API** - Expose agents via HTTP with streaming
-✅ **Want auto-discovery** - No manual registration
-✅ **Connect external tools** - MCP integration (PostgreSQL, GitHub, Slack, …)
-✅ **Deploy easily** - One-command Docker or Heroku deployment
-✅ **Monitor agents** - Built-in observability
-
-Don't use AgentShip if you:
-
-❌ **Need custom infrastructure** - You want full control
-❌ **Building a library** - Not deploying a service
-❌ **Research/experimentation** - Just prototyping
-❌ **Already have infrastructure** - You have your own setup
-
-The AgentShip Philosophy
--------------------------
-
-**"Build agents, not infrastructure"**
-
-AgentShip believes:
-- You should focus on **agent logic**, not boilerplate
-- **Shipping** should be as easy as building
-- **Infrastructure** should be invisible
-- **Configuration** should be minimal
-
-Real-World Example
-------------------
-
-**Without AgentShip** (using just Google ADK):
-
-1. Set up FastAPI
-2. Create REST endpoints
-3. Implement session management
-4. Set up PostgreSQL
-5. Configure observability
-6. Write deployment scripts
-7. Handle errors
-8. Test everything
-
-**Time**: 2-3 weeks
-
-**With AgentShip**:
-
-1. Create agent files
-2. Run ``make docker-setup``
-3. Deploy with ``make heroku-deploy``
-
-**Time**: 30 minutes
-
-The Value Proposition
+Competitive Position
 --------------------
 
-AgentShip doesn't replace other frameworks. It **complements** them by providing:
+AgentShip's unique position: the only open-source, Python-native, production-deployed framework where the **same agent class runs on ADK or LangGraph without modification** — with REST API, PostgreSQL sessions, streaming, MCP (STDIO + HTTP/OAuth), and observability included.
 
-- **Production infrastructure** they don't include
-- **Simplified deployment** they don't provide
-- **Auto-discovery** they don't have
-- **One-command setup** they don't offer
+Google, Microsoft, and LangChain all have competing incentives to *not* build true portability. Their businesses depend on lock-in. Open source with no vendor allegiance is the moat.
 
-Think of AgentShip as the **"Heroku for agents"** - it takes care of infrastructure so you can focus on building.
+.. list-table::
+   :header-rows: 1
+   :widths: 25 30 20 25
 
-Conclusion
-----------
+   * - Product
+     - Thesis
+     - Status
+     - Limitation
+   * - Oracle Agent Spec (arxiv Oct 2025)
+     - Declarative YAML portability spec
+     - Research only
+     - No production runtime shipped
+   * - LangServe / LangGraph Platform
+     - Deployment layer for LangGraph
+     - Production
+     - LangChain-locked, no ADK support
+   * - Google ADK built-in server
+     - Serve ADK agents
+     - Production
+     - ADK-only, no sessions, no MCP
+   * - CrewAI
+     - "Works with any LLM"
+     - Production
+     - No runtime portability, 50–80% rewrite to migrate
+   * - **AgentShip**
+     - Runtime-agnostic production layer
+     - **Production ✓**
+     - —
 
-AgentShip fills the gap between **building agents** and **shipping them**. It's the production layer that makes agent frameworks production-ready.
+Why Now
+-------
 
-**Use AgentShip when**: You want to ship agents to production quickly
-**Use other frameworks when**: You need their specific capabilities (orchestration, workflows, etc.)
-**Use both**: AgentShip + other frameworks = Best of both worlds
+Three converging trends make 2026 the right moment:
 
+1. **Protocol standardisation** — MCP (tools), A2A (agent-to-agent), A2UI (agent-to-interface) are all landing in 2025–2026. AgentShip sits above the execution engine but below the protocol layer — the exact position that needs to exist.
+2. **Production pressure** — 57% of developers now have agents in production. 95% of enterprise AI pilots are delivering zero measurable ROI. The "make it work in a notebook" phase is over.
+3. **No incumbent** — The Oracle Agent Spec paper (arxiv, Oct 2025) explicitly states the industry lacks a unified abstraction for AI agents. No production-deployed answer exists.

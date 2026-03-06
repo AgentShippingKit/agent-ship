@@ -1,42 +1,54 @@
 # Deployment
 
-## Overview
-
-The framework is designed for production deployment with minimal configuration. It includes deployment scripts and guides for popular platforms.
+AgentShip is designed for production from day one — the same `make docker-setup` you use locally produces a production-ready container with PostgreSQL sessions, observability, and health checks included.
 
 ## Supported Platforms
 
-- **[Heroku](heroku.md)**: One-click deployment with PostgreSQL addon
-- **Docker**: Containerized deployment for any platform
-- **Cloud Run**: Google Cloud deployment (coming soon)
-- **AWS**: ECS/Lambda deployment (coming soon)
+- **[Docker](../../user-guides/docker-setup.md)** — `make docker-setup`, runs anywhere
+- **[Heroku](heroku.md)** — `make heroku-deploy`, one command with PostgreSQL addon
+- **Cloud Run / AWS ECS** — coming soon (the Docker image works today)
 
 ## Deployment Checklist
 
-- [ ] Set environment variables
-- [ ] Configure database connection
-- [ ] Set up observability (optional)
-- [ ] Configure agent discovery directories
-- [ ] Run health checks
-- [ ] Monitor logs and metrics
+- [ ] Set at least one LLM API key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY`)
+- [ ] Set `AGENT_SESSION_STORE_URI` (PostgreSQL connection string)
+- [ ] Set `AGENT_SHORT_TERM_MEMORY=Database` for persistent sessions
+- [ ] Set `LOG_LEVEL=INFO` and `ENVIRONMENT=production`
+- [ ] Verify health check: `GET /health`
 
 ## Environment Variables
 
-Ensure all required environment variables are set in your deployment environment. See [Configuration](../getting-started/configuration.md) for details.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | One of these | LLM provider key |
+| `ANTHROPIC_API_KEY` | One of these | LLM provider key |
+| `GOOGLE_API_KEY` | One of these | LLM provider key |
+| `AGENT_SESSION_STORE_URI` | Yes (production) | PostgreSQL URI |
+| `AGENT_SHORT_TERM_MEMORY` | No | `Database` or `InMemory` |
+| `AGENTSHIP_AUTH_DB_URI` | For OAuth MCP | PostgreSQL URI for OAuth tokens |
 
-## Health Checks
+See [Configuration](../getting-started/configuration.md) for the full list.
 
-The framework provides a health check endpoint:
+## Health Check
 
 ```bash
 curl http://your-deployment-url/health
 ```
 
-## Monitoring
+Returns memory usage and status. Target: under 512 MB.
 
-Use Opik integration for production monitoring:
+## Observability
 
-- Request/response tracing
-- Performance metrics
-- Token usage tracking
-- Error logging
+Opik tracing is built in — enable it with environment variables. No code changes needed:
+
+- Request/response tracing for every agent call
+- Tool call timeline and latency (visible in AgentShip Studio)
+- Token usage tracking per request
+
+## Ports
+
+| Service | Port |
+|---------|------|
+| API / Swagger / Studio | 7001 |
+| PostgreSQL (Docker host) | 5433 |
+| PostgreSQL (container internal) | 5432 |

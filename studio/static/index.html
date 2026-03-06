@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentShip Studio</title>
+    <link rel="icon" type="image/png" href="/branding/favicons/favicon-32.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>tailwind.config = { darkMode: 'class', theme: { extend: {} } }</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── Design tokens ────────────────────────────────── */
+        :root {
+            --bg:        #08080f;
+            --surface:   #0f0f1a;
+            --surface2:  #161625;
+            --surface3:  #1d1d30;
+            --border:    rgba(255,255,255,0.07);
+            --borderh:   rgba(255,255,255,0.13);
+            --t1:        #eeeeff;
+            --t2:        #9a96c5;
+            --t3:        #4e4a72;
+            --accent:    #7c6ff7;
+            --accentdim: rgba(124,111,247,0.13);
+            --accentb:   rgba(124,111,247,0.28);
+            --green:     #34d399;
+            --greendim:  rgba(52,211,153,0.12);
+            --purple:    #c084fc;
+            --purpledim: rgba(192,132,252,0.12);
+        }
+        html:not(.dark) {
+            --bg:        #f5f5fc;
+            --surface:   #ffffff;
+            --surface2:  #f0f0f8;
+            --surface3:  #e8e8f4;
+            --border:    rgba(0,0,0,0.07);
+            --borderh:   rgba(0,0,0,0.13);
+            --t1:        #18162e;
+            --t2:        #5a5676;
+            --t3:        #9694b2;
+            --accentdim: rgba(124,111,247,0.08);
+            --accentb:   rgba(124,111,247,0.22);
+        }
+
+        /* ── Base ─────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--t1);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+            letter-spacing: -0.006em;
+        }
+
+        /* ── Scrollbar ────────────────────────────────────── */
+        .scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.07) transparent; overflow-y: auto; }
+        .scroll::-webkit-scrollbar { width: 4px; }
+        .scroll::-webkit-scrollbar-track { background: transparent; }
+        .scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
+        .scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.13); }
+
+        /* ── Animations ───────────────────────────────────── */
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        .pulse-dot { animation: pulseDot 2.5s ease-in-out infinite; }
+        @keyframes pulseDot { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
+
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Icon button ──────────────────────────────────── */
+        .icon-btn {
+            background: transparent; border: none; cursor: pointer;
+            color: var(--t3); border-radius: 8px; padding: 7px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.12s, color 0.12s;
+        }
+        .icon-btn:hover { background: var(--surface2); color: var(--t1); }
+
+        /* ── Sidebar ──────────────────────────────────────── */
+        #sidebar {
+            width: 256px; flex-shrink: 0; display: flex; flex-direction: column;
+            background: var(--surface); border-right: 1px solid var(--border);
+        }
+        .logo-area {
+            padding: 0 16px; height: 56px; display: flex; align-items: center;
+            justify-content: space-between; flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--surface) 0%, rgba(124,111,247,0.04) 100%);
+        }
+        .logo-icon {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            background: var(--accentdim); border: 1px solid var(--accentb);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-icon img { width: 20px; height: 20px; }
+
+        /* ── Agent list ───────────────────────────────────── */
+        #agent-list-area {
+            flex: 1; overflow-y: auto; padding: 12px 8px 8px;
+        }
+        .section-label {
+            font-size: 0.65rem; font-weight: 600; letter-spacing: 0.09em;
+            text-transform: uppercase; color: var(--t3); padding: 0 8px; margin-bottom: 6px;
+        }
+        .agent-btn {
+            width: 100%; display: flex; align-items: center; gap: 9px;
+            padding: 8px 10px; border-radius: 9px; border: none; cursor: pointer;
+            background: transparent; text-align: left; transition: background 0.12s;
+            position: relative;
+        }
+        .agent-btn:hover { background: var(--surface2); }
+        .agent-btn.active-agent { background: var(--accentdim); }
+        .agent-dot {
+            width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+            background: var(--border); transition: background 0.15s, box-shadow 0.15s;
+        }
+        .agent-btn.active-agent .agent-dot {
+            background: var(--accent);
+            box-shadow: 0 0 7px rgba(124,111,247,0.6);
+        }
+        .agent-label {
+            font-size: 0.8125rem; font-weight: 500; truncate; color: var(--t2);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: color 0.12s;
+        }
+        .agent-btn:hover .agent-label { color: var(--t1); }
+        .agent-btn.active-agent .agent-label { color: var(--t1); }
+
+        .conv-list { padding: 2px 0 4px 26px; }
+        .conv-btn {
+            width: 100%; text-align: left; padding: 4px 8px; border-radius: 7px;
+            font-size: 0.73rem; color: var(--t3); background: transparent; border: none;
+            cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: background 0.12s, color 0.12s;
+        }
+        .conv-btn:hover { background: var(--surface2); color: var(--t2); }
+
+        /* ── New chat button ──────────────────────────────── */
+        .btn-new-chat {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 8px 14px; border-radius: 10px; border: 1px solid var(--accentb);
+            background: var(--accentdim); color: #c0baff; font-size: 0.8125rem; font-weight: 500;
+            cursor: pointer; transition: background 0.12s, border-color 0.12s;
+            font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.01em;
+        }
+        .btn-new-chat:hover:not(:disabled) { background: rgba(124,111,247,0.2); border-color: rgba(124,111,247,0.4); }
+        .btn-new-chat:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* ── Header ───────────────────────────────────────── */
+        #chat-header {
+            height: 56px; flex-shrink: 0; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 20px;
+            background: var(--surface); border-bottom: 1px solid var(--border);
+        }
+
+        /* ── Badges ───────────────────────────────────────── */
+        .badge {
+            font-size: 0.68rem; padding: 2px 9px; border-radius: 100px; font-weight: 600;
+        }
+        .badge-adk { background: var(--greendim); color: var(--green); border: 1px solid rgba(52,211,153,0.22); }
+        .badge-lg  { background: var(--purpledim); color: var(--purple); border: 1px solid rgba(192,132,252,0.22); }
+        .badge-model {
+            font-size: 0.68rem; padding: 2px 9px; border-radius: 100px;
+            background: rgba(255,255,255,0.04); color: var(--t3);
+            border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ── Chat messages ────────────────────────────────── */
+        #chat-container {
+            flex: 1; overflow-y: auto; padding: 32px 28px 16px;
+        }
+        #chat-container > * + * { margin-top: 24px; }
+
+        #welcome-message {
+            height: 100%; display: flex; align-items: center; justify-content: center;
+        }
+        .welcome-icon {
+            width: 68px; height: 68px; border-radius: 20px;
+            background: var(--accentdim); border: 1px solid var(--accentb);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .welcome-icon img { width: 38px; height: 38px; }
+
+        .message-bubble { display: flex; }
+
+        /* User bubble */
+        .user-bubble {
+            background: linear-gradient(140deg, #1e1b47 0%, #191637 100%);
+            border: 1px solid rgba(124,111,247,0.22);
+            border-radius: 16px; border-top-right-radius: 5px;
+            padding: 11px 16px;
+        }
+        html:not(.dark) .user-bubble {
+            background: linear-gradient(140deg, #ebe8ff 0%, #e5e2ff 100%);
+            border-color: rgba(124,111,247,0.28);
+        }
+
+        /* Assistant bubble */
+        .asst-avatar {
+            width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
+            background: var(--accentdim); border: 1px solid var(--accentb);
+            display: flex; align-items: center; justify-content: center; margin-top: 2px;
+        }
+
+        /* Action row (feedback/copy) */
+        .msg-actions {
+            display: flex; align-items: center; gap: 2px; margin-top: 8px;
+        }
+        .action-btn {
+            padding: 4px; border-radius: 6px; border: none; cursor: pointer;
+            background: transparent; color: var(--t3); display: flex;
+            align-items: center; justify-content: center; transition: color 0.12s;
+        }
+        .action-btn:hover { color: var(--t2); }
+        .action-btn.liked  { color: var(--green); }
+        .action-btn.disliked { color: #f87171; }
+
+        /* ── Markdown ─────────────────────────────────────── */
+        .md { line-height: 1.65; }
+        .md h1,.md h2,.md h3,.md h4 { font-weight:600; margin:.7em 0 .3em; line-height:1.3; color:var(--t1); }
+        .md h1 { font-size:1.2em; } .md h2 { font-size:1.05em; } .md h3 { font-size:1em; }
+        .md p { margin:.4em 0; }
+        .md ul,.md ol { padding-left:1.4em; margin:.35em 0; }
+        .md li { margin:.15em 0; }
+        .md code { background:rgba(124,111,247,0.12); border-radius:4px; padding:.1em .35em; font-family:'JetBrains Mono',monospace; font-size:.84em; color:#c4beff; }
+        .md pre { background:rgba(0,0,0,0.28); border:1px solid var(--border); border-radius:8px; padding:.75em 1em; overflow-x:auto; margin:.5em 0; }
+        .md pre code { background:none; padding:0; color:#c4beff; }
+        .md strong { font-weight:600; }
+        .md em { font-style:italic; }
+        .md blockquote { border-left:3px solid var(--accent); padding-left:.75em; margin:.35em 0; color:var(--t2); }
+        .md a { color:#a78bfa; text-decoration:underline; text-underline-offset:2px; }
+        .md table { border-collapse:collapse; width:100%; margin:.5em 0; }
+        .md th,.md td { border:1px solid var(--border); padding:.3em .6em; text-align:left; }
+        .md th { background:rgba(124,111,247,0.07); font-weight:600; }
+        .md hr { border:none; border-top:1px solid var(--border); margin:.7em 0; }
+
+        /* ── Input area ───────────────────────────────────── */
+        #input-area {
+            flex-shrink: 0; padding: 12px 20px 20px;
+            background: var(--bg);
+        }
+        .input-wrap {
+            background: var(--surface2); border: 1.5px solid var(--borderh);
+            border-radius: 16px; transition: border-color 0.15s, box-shadow 0.15s;
+            display: flex; flex-direction: column;
+        }
+        .input-wrap:focus-within {
+            border-color: rgba(124,111,247,0.45);
+            box-shadow: 0 0 0 4px rgba(124,111,247,0.07);
+        }
+        #main-textarea {
+            resize: none; min-height: 52px; max-height: 200px;
+            width: 100%; background: transparent; border: none; outline: none;
+            padding: 14px 16px 6px; font-size: 0.9375rem; line-height: 1.55;
+            color: var(--t1); font-family: 'Inter', system-ui, sans-serif;
+            caret-color: var(--accent);
+        }
+        #main-textarea::placeholder { color: var(--t3); font-weight: 400; }
+
+        .input-footer {
+            padding: 8px 10px 10px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .kbd-hint {
+            font-size: 0.68rem; color: var(--t3);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .send-btn {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; border: none;
+            background: var(--accent); color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .send-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(1.04); }
+        .send-btn:active:not(:disabled) { transform: scale(0.96); }
+        .send-btn:disabled { opacity: 0.22; cursor: not-allowed; }
+
+        .stop-btn {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; border: none;
+            background: rgba(239,68,68,0.15); color: #f87171;
+            border: 1px solid rgba(239,68,68,0.3);
+            cursor: pointer; display: none; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .stop-btn:hover { background: rgba(239,68,68,0.25); }
+
+        /* ── Extra fields ─────────────────────────────────── */
+        .param-input {
+            width: 100%; border-radius: 8px; padding: 6px 10px; font-size: 0.75rem;
+            background: var(--bg); border: 1px solid var(--border); color: var(--t1);
+            outline: none; font-family: 'Inter', system-ui, sans-serif; font-size: 0.8rem;
+            transition: border-color 0.15s;
+        }
+        .param-input:focus { border-color: var(--accentb); }
+
+        /* ── Obs panel ────────────────────────────────────── */
+        #obs-panel {
+            display: none; width: 288px; flex-shrink: 0; flex-direction: column;
+            background: var(--surface); border-left: 1px solid var(--border);
+        }
+        .obs-tab {
+            font-size: 0.75rem; font-weight: 500; padding: 7px 13px; border: none;
+            border-bottom: 2px solid transparent; background: transparent; cursor: pointer;
+            transition: color 0.12s, border-color 0.12s; font-family: 'Inter', system-ui, sans-serif;
+            color: var(--t3);
+        }
+        .obs-tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+
+        .info-card {
+            margin: 12px; padding: 12px; border-radius: 10px;
+            background: var(--surface2); border: 1px solid var(--border);
+        }
+        .info-row { display: flex; align-items: center; justify-content: space-between; }
+        .info-row + .info-row { margin-top: 6px; }
+        .info-label { font-size: 0.71rem; color: var(--t3); }
+        .info-value { font-size: 0.71rem; color: var(--t2); }
+        .info-value.mono { font-family: 'JetBrains Mono', monospace; }
+
+        .obs-event {
+            display: flex; align-items: flex-start; gap: 8px; padding: 3px 0;
+        }
+        .obs-dot { font-size: 0.5rem; margin-top: 3px; flex-shrink: 0; }
+
+
+        /* ── Thinking spinner inside stream ─────────────── */
+        .think-row { display: flex; align-items: center; gap: 8px; }
+        .think-dots { display: flex; gap: 4px; }
+        .think-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--t3); animation: thinkPulse 1.4s infinite both;
+        }
+        .think-dot:nth-child(2) { animation-delay: 0.2s; }
+        .think-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinkPulse { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-4px); opacity:1; } }
+    </style>
+</head>
+<body>
+<div style="display:flex;height:100%">
+
+    <!-- ═══ SIDEBAR ════════════════════════════════════════ -->
+    <aside id="sidebar">
+        <!-- Logo -->
+        <div class="logo-area">
+            <div style="display:flex;align-items:center;gap:11px">
+                <div class="logo-icon">
+                    <img src="/branding/icons/icon-light-2048.png" alt="AgentShip" />
+                </div>
+                <div>
+                    <p style="font-size:0.875rem;font-weight:600;color:var(--t1);line-height:1.1;letter-spacing:-0.015em;margin:0">AgentShip</p>
+                    <p style="font-size:0.65rem;font-weight:600;color:var(--accent);letter-spacing:0.07em;text-transform:uppercase;margin:2px 0 0">Studio</p>
+                </div>
+            </div>
+            <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+                <svg id="icon-moon" style="width:15px;height:15px;display:none" class="dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <svg id="icon-sun" style="width:15px;height:15px" class="block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </button>
+        </div>
+
+        <!-- Agent list -->
+        <div id="agent-list-area" class="scroll">
+            <p class="section-label">Agents</p>
+            <div id="agent-list">
+                <div style="padding:6px 10px;font-size:0.78rem;color:var(--t3)">Loading…</div>
+            </div>
+        </div>
+
+        <!-- New Chat -->
+        <div style="padding:12px;border-top:1px solid var(--border);flex-shrink:0">
+            <button id="new-chat-btn" disabled class="btn-new-chat">
+                <svg style="width:12px;height:12px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                New Chat
+            </button>
+        </div>
+    </aside>
+
+    <!-- ═══ MAIN CHAT ═══════════════════════════════════════ -->
+    <main style="flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg)">
+
+        <!-- Header -->
+        <div id="chat-header">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <div id="status-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--t3)"></div>
+                <h2 id="agent-name-header" style="font-size:0.875rem;font-weight:500;color:var(--t2);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Select an agent</h2>
+                <div id="agent-badges" style="display:none;align-items:center;gap:6px;flex-shrink:0">
+                    <span id="badge-engine" class="badge"></span>
+                    <span id="badge-model" class="badge-model"></span>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+                <button id="toggle-obs-btn" class="icon-btn" title="Observability">
+                    <svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </button>
+                <button id="clear-chat-btn" class="icon-btn" title="New chat">
+                    <svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-container" class="scroll">
+            <div id="welcome-message">
+                <div style="text-align:center;max-width:320px">
+                    <div class="welcome-icon">
+                        <img src="/branding/icons/icon-light-2048.png" alt="" />
+                    </div>
+                    <h3 style="font-size:1.0625rem;font-weight:600;color:var(--t1);margin:0 0 9px;letter-spacing:-0.015em">AgentShip Studio</h3>
+                    <p style="font-size:0.8125rem;color:var(--t3);margin:0;line-height:1.6">Select an agent from the sidebar<br>to start a conversation.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div id="input-area">
+            <!-- Extra params -->
+            <div id="extra-fields" style="display:none;margin-bottom:10px">
+                <button id="toggle-fields-btn" style="display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:500;color:var(--t3);background:none;border:none;cursor:pointer;padding:0;margin-bottom:8px;font-family:'DM Sans',sans-serif;transition:color 0.12s" onmouseover="this.style.color='var(--t2)'" onmouseout="this.style.color='var(--t3)'">
+                    <svg id="fields-chevron" style="width:11px;height:11px;transition:transform 0.15s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                    Parameters
+                </button>
+                <div id="extra-fields-content" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;display:none;grid-template-columns:1fr 1fr;gap:10px">
+                </div>
+            </div>
+            <!-- Textarea row -->
+            <div class="input-wrap">
+                <textarea id="main-textarea" rows="1" placeholder="Message…"></textarea>
+                <div class="input-footer">
+                    <span class="kbd-hint">↵ send · shift+↵ newline</span>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <button id="stop-btn" class="stop-btn" title="Stop generation" onclick="currentAbortController?.abort()">
+                            <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                        <button id="send-btn" disabled class="send-btn" title="Send">
+                            <svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══ OBS PANEL ═══════════════════════════════════════ -->
+    <aside id="obs-panel">
+        <!-- Header + tabs -->
+        <div style="flex-shrink:0;padding:16px 16px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <h3 style="font-size:0.8125rem;font-weight:600;color:var(--t1);margin:0">Observability</h3>
+                <button id="close-obs-btn" class="icon-btn" style="padding:4px">
+                    <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div style="display:flex">
+                <button data-tab="activity" class="obs-tab active">Activity</button>
+                <button data-tab="schema" class="obs-tab">Schema</button>
+            </div>
+        </div>
+
+        <!-- Activity tab -->
+        <div id="tab-activity" style="flex:1;overflow-y:auto;display:flex;flex-direction:column" class="scroll">
+            <div id="obs-info-card" class="info-card" style="display:none">
+                <div class="info-row"><span class="info-label">Engine</span><span id="obs-engine" class="info-value"></span></div>
+                <div class="info-row"><span class="info-label">Model</span><span id="obs-model" class="info-value mono"></span></div>
+                <div class="info-row"><span class="info-label">Memory</span><span id="obs-memory" class="info-value"></span></div>
+            </div>
+            <div id="obs-empty" style="flex:1;display:flex;align-items:center;justify-content:center">
+                <p style="font-size:0.72rem;color:var(--t3)">Send a message to see activity</p>
+            </div>
+            <div id="obs-timeline" style="padding:8px 12px;display:flex;flex-direction:column;gap:4px"></div>
+            <div id="obs-stats" class="info-card" style="display:none;margin-top:0">
+                <div class="info-row"><span class="info-label">Latency</span><span id="obs-latency" class="info-value mono" style="color:var(--green)"></span></div>
+                <div id="obs-tool-row" class="info-row" style="display:none"><span class="info-label">Tool calls</span><span id="obs-tool-count" class="info-value mono" style="color:#fbbf24"></span></div>
+            </div>
+            <div style="margin:4px 12px 12px">
+                <button id="toggle-logs-btn" style="display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:500;color:var(--t3);background:none;border:none;cursor:pointer;padding:0;width:100%;font-family:'DM Sans',sans-serif;transition:color 0.12s" onmouseover="this.style.color='var(--t2)'" onmouseout="this.style.color='var(--t3)'">
+                    <svg id="logs-chevron" style="width:10px;height:10px;transition:transform 0.15s" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                    Advanced logs
+                </button>
+                <div id="advanced-logs" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;max-height:140px;overflow-y:auto">
+                    <div id="log-lines" style="display:flex;flex-direction:column;gap:2px;font-size:0.67rem;font-family:'JetBrains Mono',monospace;color:var(--t3)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schema tab -->
+        <div id="tab-schema" style="display:none;flex:1;overflow-y:auto;padding:12px" class="scroll">
+            <div id="schema-content" style="font-size:0.75rem;color:var(--t2)">
+                <p style="color:var(--t3)">Select an agent to view its schema</p>
+            </div>
+        </div>
+    </aside>
+
+</div><!-- end layout -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  AgentShip Studio
+// ═══════════════════════════════════════════════════════
+
+// ── Theme ──────────────────────────────────────────────
+(function initTheme() {
+    const saved = localStorage.getItem('studio_theme') || 'dark';
+    document.documentElement.classList.toggle('dark', saved === 'dark');
+    // sync moon/sun icons after DOM ready
+    const moon = document.getElementById('icon-moon');
+    const sun  = document.getElementById('icon-sun');
+    if (saved === 'dark') { moon.style.display = ''; sun.style.display = 'none'; }
+    else                  { moon.style.display = 'none'; sun.style.display = ''; }
+})();
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('studio_theme', isDark ? 'dark' : 'light');
+    const moon = document.getElementById('icon-moon');
+    const sun  = document.getElementById('icon-sun');
+    moon.style.display = isDark ? '' : 'none';
+    sun.style.display  = isDark ? 'none' : '';
+}
+
+// ── Formatting ─────────────────────────────────────────
+const ACRONYMS = new Set(['mcp','adk','api','llm','sse','http','ai','db','sql','gpt']);
+function formatAgentName(name) {
+    return name.split('_').map(w => ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// ── State ──────────────────────────────────────────────
+let currentAbortController = null;
+
+const state = {
+    agents: [],
+    agentConfigs: {},
+    currentAgent: null,
+    currentSchema: null,
+    sessionId: null,
+    userId: (() => {
+        let id = localStorage.getItem('studio_uid');
+        if (!id) { id = 'user_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('studio_uid', id); }
+        return id;
+    })(),
+    messages: [],
+    isLoading: false,
+    streamStartTime: null,
+    toolCallCount: 0,
+};
+
+// ── Conversation history (localStorage) ────────────────
+function loadConvos(agentName) {
+    try { return JSON.parse(localStorage.getItem('studio_chats_' + agentName) || '[]'); } catch { return []; }
+}
+function saveConvos(agentName, list) {
+    try { localStorage.setItem('studio_chats_' + agentName, JSON.stringify(list.slice(-10))); } catch {}
+}
+function persistCurrentConvo() {
+    if (!state.currentAgent || !state.sessionId || state.messages.length === 0) return;
+    const list = loadConvos(state.currentAgent);
+    const title = state.messages.find(m => m.role === 'user')?.content?.slice(0, 50) || 'Conversation';
+    const record = { id: state.sessionId, sessionId: state.sessionId, title, createdAt: new Date().toISOString(), messages: state.messages.slice(-30) };
+    const idx = list.findIndex(c => c.sessionId === state.sessionId);
+    if (idx >= 0) list[idx] = record; else list.push(record);
+    saveConvos(state.currentAgent, list);
+}
+function restoreConvo(agentName, sessionId) {
+    const record = loadConvos(agentName).find(c => c.sessionId === sessionId);
+    if (!record) return false;
+    state.sessionId = record.sessionId;
+    state.messages = record.messages || [];
+    return true;
+}
+
+// ── API ─────────────────────────────────────────────────
+async function fetchAgents() {
+    try {
+        const res = await fetch('/api/debug/agents');
+        state.agents = await res.json();
+        renderAgentList();
+    } catch {
+        document.getElementById('agent-list').innerHTML = '<div style="padding:8px 10px;font-size:0.78rem;color:#f87171">Failed to load agents</div>';
+    }
+}
+
+async function fetchAgentConfig(agentName) {
+    if (state.agentConfigs[agentName]) return state.agentConfigs[agentName];
+    try {
+        const res = await fetch('/api/debug/agents/' + agentName + '/config');
+        if (res.ok) state.agentConfigs[agentName] = await res.json();
+    } catch {}
+    return state.agentConfigs[agentName] || {};
+}
+
+// ── Input helpers ───────────────────────────────────────
+const SYS_FIELDS = ['session_id', 'user_id'];
+function getUserFields(schema) {
+    if (!schema?.input?.properties) return [];
+    return Object.entries(schema.input.properties).filter(([n]) => !SYS_FIELDS.includes(n));
+}
+function getPrimaryField(schema) {
+    const names = getUserFields(schema).map(([n]) => n);
+    return names.find(n => n === 'text') || names.find(n => n === 'message') || names.find(n => n === 'query') || names[0];
+}
+function getSecondaryFields(schema) {
+    const primary = getPrimaryField(schema);
+    return getUserFields(schema).filter(([n]) => n !== primary);
+}
+function collectInputData() {
+    const textarea = document.getElementById('main-textarea');
+    const text = textarea?.value?.trim();
+    if (!text) return null;
+    const primaryField = getPrimaryField(state.currentSchema) || 'text';
+    const data = { [primaryField]: text };
+    for (const [name, prop] of getSecondaryFields(state.currentSchema || {})) {
+        const el = document.getElementById('param-' + name);
+        if (!el) continue;
+        const val = el.value?.trim();
+        if (!val) continue;
+        try {
+            if (prop.type === 'integer') data[name] = parseInt(val, 10);
+            else if (prop.type === 'number') data[name] = parseFloat(val);
+            else if (prop.type === 'boolean') data[name] = val === 'true';
+            else if (prop.type === 'array' || prop.type === 'object') data[name] = JSON.parse(val);
+            else data[name] = val;
+        } catch { data[name] = val; }
+    }
+    return data;
+}
+function fmtFieldName(name) {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Sidebar rendering ───────────────────────────────────
+function renderAgentList() {
+    const container = document.getElementById('agent-list');
+    if (!state.agents.length) {
+        container.innerHTML = '<div style="padding:6px 10px;font-size:0.78rem;color:var(--t3)">No agents found</div>';
+        return;
+    }
+    container.innerHTML = '';
+    state.agents.forEach(agent => {
+        const row = document.createElement('div');
+        row.dataset.agent = agent.name;
+        row.className = 'agent-row';
+
+        const btn = document.createElement('button');
+        btn.className = 'agent-btn';
+        btn.innerHTML = `
+            <div class="agent-dot"></div>
+            <span class="agent-label">${escapeHtml(formatAgentName(agent.name))}</span>
+        `;
+        btn.addEventListener('click', () => selectAgent(agent.name));
+
+        const convList = document.createElement('div');
+        convList.className = 'conv-list';
+        convList.style.display = 'none';
+        convList.dataset.agent = agent.name;
+
+        loadConvos(agent.name).slice(-5).reverse().forEach(conv => {
+            const cb = document.createElement('button');
+            cb.className = 'conv-btn';
+            cb.textContent = conv.title || 'Conversation';
+            cb.addEventListener('click', e => { e.stopPropagation(); restoreAndShow(agent.name, conv.sessionId); });
+            convList.appendChild(cb);
+        });
+
+        row.appendChild(btn);
+        row.appendChild(convList);
+        container.appendChild(row);
+    });
+    highlightAgent(state.currentAgent);
+}
+
+function highlightAgent(agentName) {
+    document.querySelectorAll('.agent-btn').forEach(btn => {
+        const row = btn.closest('.agent-row');
+        const isActive = row?.dataset.agent === agentName;
+        btn.classList.toggle('active-agent', isActive);
+    });
+    document.querySelectorAll('.conv-list').forEach(el => {
+        el.style.display = el.dataset.agent === agentName ? 'block' : 'none';
+    });
+}
+
+function renderExtraFields(schema) {
+    const secondary = getSecondaryFields(schema);
+    const wrapper = document.getElementById('extra-fields');
+    const content = document.getElementById('extra-fields-content');
+    if (secondary.length === 0) { wrapper.style.display = 'none'; return; }
+    wrapper.style.display = 'block';
+    content.innerHTML = secondary.map(([name, prop]) => `
+        <div>
+            <label style="display:block;font-size:0.72rem;font-weight:500;color:var(--t3);margin-bottom:5px">${fmtFieldName(name)}${schema.input?.required?.includes(name) ? ' <span style="color:#f87171">*</span>' : ''}</label>
+            <input type="text" id="param-${name}" placeholder="${fmtFieldName(name).toLowerCase()}…" class="param-input">
+        </div>
+    `).join('');
+}
+
+function renderSchema(schema) {
+    const el = document.getElementById('schema-content');
+    if (!schema) { el.innerHTML = '<p style="color:var(--t3)">No schema</p>'; return; }
+    const renderGroup = (props, label, color) => {
+        if (!props || !Object.keys(props).length) return '';
+        return `<div style="margin-bottom:14px">
+            <p style="font-size:0.67rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:${color};margin:0 0 8px">${label}</p>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                ${Object.entries(props).map(([name, prop]) => `
+                    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                            <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:0.78rem">${name}</code>
+                            <span style="font-size:0.67rem;padding:1px 6px;border-radius:5px;background:var(--surface3);color:var(--t3)">${prop.type || 'string'}</span>
+                            ${schema.input?.required?.includes(name) ? '<span style="font-size:0.67rem;color:#f87171">required</span>' : ''}
+                        </div>
+                        ${prop.description ? `<p style="font-size:0.71rem;color:var(--t3);margin:4px 0 0">${prop.description}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    };
+    el.innerHTML = renderGroup(schema.input?.properties, 'Input', 'var(--green)') +
+                   renderGroup(schema.output?.properties, 'Output', '#60a5fa') ||
+                   '<p style="color:var(--t3)">No schema</p>';
+}
+
+function renderMessages() {
+    const container = document.getElementById('chat-container');
+    const welcome = document.getElementById('welcome-message');
+    container.querySelectorAll('.message-bubble').forEach(e => e.remove());
+    if (state.messages.length === 0) { welcome.style.display = ''; return; }
+    welcome.style.display = 'none';
+    state.messages.forEach((msg, idx) => container.appendChild(createMsgEl(msg, idx)));
+    scrollToBottom();
+}
+
+function createMsgEl(msg, index) {
+    const div = document.createElement('div');
+    div.className = 'message-bubble fade-in';
+    div.style.justifyContent = msg.role === 'user' ? 'flex-end' : 'flex-start';
+    const isAssistant = msg.role === 'assistant';
+    const html = isAssistant ? marked.parse(msg.content || '') : escapeHtml(msg.content || '').replace(/\n/g, '<br>');
+
+    if (msg.role === 'user') {
+        div.innerHTML = `
+            <div style="max-width:480px">
+                <div class="user-bubble">
+                    <div style="font-size:0.875rem;color:var(--t1)">${html}</div>
+                </div>
+                <p style="font-size:0.68rem;color:var(--t3);margin:5px 4px 0;text-align:right">${msg.timestamp}</p>
+            </div>`;
+    } else {
+        div.innerHTML = `
+            <div style="max-width:680px;width:100%">
+                <div style="display:flex;align-items:flex-start;gap:11px">
+                    <div class="asst-avatar">
+                        <svg style="width:14px;height:14px;color:var(--accent)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div class="md" style="font-size:0.875rem;color:var(--t1)">${html}</div>
+                        <div class="msg-actions">
+                            <span style="font-size:0.68rem;color:var(--t3)">${msg.timestamp}</span>
+                            <span style="flex:1"></span>
+                            <button onclick="giveFeedback(${index},'up')" class="action-btn ${msg.feedback==='up'?'liked':''}" title="Good response">
+                                <svg style="width:13px;height:13px" fill="${msg.feedback==='up'?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
+                            </button>
+                            <button onclick="giveFeedback(${index},'down')" class="action-btn ${msg.feedback==='down'?'disliked':''}" title="Bad response">
+                                <svg style="width:13px;height:13px" fill="${msg.feedback==='down'?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/></svg>
+                            </button>
+                            <button onclick="copyMsg(${index})" class="action-btn" title="Copy">
+                                <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+    return div;
+}
+
+// ── Agent selection ─────────────────────────────────────
+async function selectAgent(agentName) {
+    if (state.currentAgent === agentName) return;
+    persistCurrentConvo();
+    state.currentAgent = agentName;
+    state.messages = [];
+    state.sessionId = null;
+    const agent = state.agents.find(a => a.name === agentName);
+    if (agent) state.currentSchema = { input: agent.input_schema, output: agent.output_schema };
+
+    highlightAgent(agentName);
+    document.getElementById('agent-name-header').textContent = formatAgentName(agentName);
+    document.getElementById('agent-name-header').style.color = 'var(--t1)';
+    const dot = document.getElementById('status-dot');
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow = '0 0 0 3px rgba(52,211,153,0.15)';
+    dot.className = 'pulse-dot';
+    document.getElementById('new-chat-btn').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('main-textarea').placeholder = 'Message ' + formatAgentName(agentName) + '…';
+
+    if (state.currentSchema) { renderExtraFields(state.currentSchema); renderSchema(state.currentSchema); }
+    renderMessages();
+
+    fetchAgentConfig(agentName).then(cfg => {
+        if (state.currentAgent !== agentName) return;
+        applyBadges(cfg);
+        applyObsInfo(cfg);
+    });
+}
+
+function applyBadges(cfg) {
+    const wrap = document.getElementById('agent-badges');
+    const eng = document.getElementById('badge-engine');
+    const mdl = document.getElementById('badge-model');
+    if (!cfg.engine || cfg.engine === 'unknown') { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'flex';
+    if (cfg.engine === 'langgraph') {
+        eng.className = 'badge badge-lg';
+        eng.textContent = 'LangGraph';
+    } else {
+        eng.className = 'badge badge-adk';
+        eng.textContent = cfg.engine === 'adk' ? 'ADK' : cfg.engine;
+    }
+    mdl.textContent = cfg.model || '';
+    mdl.style.display = cfg.model ? '' : 'none';
+}
+
+function applyObsInfo(cfg) {
+    if (!cfg.engine || cfg.engine === 'unknown') return;
+    document.getElementById('obs-info-card').style.display = 'block';
+    document.getElementById('obs-engine').textContent = cfg.engine === 'langgraph' ? 'LangGraph' : (cfg.engine?.toUpperCase() || '?');
+    document.getElementById('obs-model').textContent = cfg.model || '?';
+    document.getElementById('obs-memory').textContent = cfg.memory_backend || 'in_memory';
+}
+
+async function restoreAndShow(agentName, sessionId) {
+    persistCurrentConvo();
+    state.currentAgent = agentName;
+    const agent = state.agents.find(a => a.name === agentName);
+    if (agent) state.currentSchema = { input: agent.input_schema, output: agent.output_schema };
+    restoreConvo(agentName, sessionId);
+    highlightAgent(agentName);
+    document.getElementById('agent-name-header').textContent = formatAgentName(agentName);
+    document.getElementById('agent-name-header').style.color = 'var(--t1)';
+    const dot = document.getElementById('status-dot');
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow = '0 0 0 3px rgba(52,211,153,0.15)';
+    dot.className = 'pulse-dot';
+    document.getElementById('new-chat-btn').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('main-textarea').placeholder = 'Message ' + formatAgentName(agentName) + '…';
+    if (state.currentSchema) { renderExtraFields(state.currentSchema); renderSchema(state.currentSchema); }
+    renderMessages();
+    fetchAgentConfig(agentName).then(cfg => { applyBadges(cfg); applyObsInfo(cfg); });
+}
+
+function startNewChat() {
+    persistCurrentConvo();
+    state.messages = [];
+    state.sessionId = null;
+    const container = document.getElementById('chat-container');
+    container.querySelectorAll('.message-bubble, .typing-indicator-container').forEach(e => e.remove());
+    document.getElementById('welcome-message').style.display = '';
+    clearObs();
+    renderAgentList();
+    highlightAgent(state.currentAgent);
+    document.getElementById('main-textarea')?.focus();
+}
+
+// ── Observability ───────────────────────────────────────
+function clearObs() {
+    state.toolCallCount = 0;
+    state.streamStartTime = null;
+    document.getElementById('obs-timeline').innerHTML = '';
+    document.getElementById('obs-stats').style.display = 'none';
+    document.getElementById('obs-tool-row').style.display = 'none';
+    document.getElementById('obs-empty').style.display = 'flex';
+    document.getElementById('log-lines').innerHTML = '';
+}
+
+function addObsEvent(type, data) {
+    document.getElementById('obs-empty').style.display = 'none';
+    const timeline = document.getElementById('obs-timeline');
+    const el = document.createElement('div');
+    el.className = 'obs-event fade-in';
+    switch (type) {
+        case 'thinking':
+            el.innerHTML = `<span class="obs-dot" style="color:#60a5fa">●</span><span style="font-size:0.72rem;color:#93c5fd">${escapeHtml(data.message || 'Thinking…')}</span>`;
+            break;
+        case 'tool_call':
+            state.toolCallCount++;
+            el.innerHTML = `<span class="obs-dot" style="color:#fbbf24">▶</span><span style="font-size:0.72rem;color:var(--t2)">Call <code style="font-family:'JetBrains Mono',monospace;color:#fde68a;font-size:0.7rem">${escapeHtml(data.tool_name || '?')}</code></span>`;
+            break;
+        case 'tool_result':
+            el.innerHTML = `<span class="obs-dot" style="color:var(--green)">✓</span><span style="font-size:0.72rem;color:var(--t2)">Result <code style="font-family:'JetBrains Mono',monospace;color:#6ee7b7;font-size:0.7rem">${escapeHtml(data.tool_name || '?')}</code></span>`;
+            break;
+        case 'error':
+            el.innerHTML = `<span class="obs-dot" style="color:#f87171">✕</span><span style="font-size:0.72rem;color:#fca5a5">${escapeHtml(data.message || 'Error')}</span>`;
+            break;
+        case 'stopped':
+            el.innerHTML = `<span class="obs-dot" style="color:#fb923c">■</span><span style="font-size:0.72rem;color:#fdba74">Stopped</span>`;
+            break;
+        default: return;
+    }
+    timeline.appendChild(el);
+
+    const logEl = document.createElement('div');
+    logEl.textContent = '[' + type + '] ' + JSON.stringify(data).slice(0, 140);
+    document.getElementById('log-lines').appendChild(logEl);
+}
+
+function finalizeObs() {
+    if (state.streamStartTime) {
+        const secs = ((Date.now() - state.streamStartTime) / 1000).toFixed(2);
+        document.getElementById('obs-latency').textContent = secs + 's';
+        document.getElementById('obs-stats').style.display = 'block';
+    }
+    if (state.toolCallCount > 0) {
+        document.getElementById('obs-tool-count').textContent = String(state.toolCallCount);
+        document.getElementById('obs-tool-row').style.display = 'flex';
+    }
+}
+
+// ── Sending ─────────────────────────────────────────────
+async function sendMessage() {
+    if (!state.currentAgent || state.isLoading) return;
+    const data = collectInputData();
+    if (!data) return;
+    const textarea = document.getElementById('main-textarea');
+    const sentText = textarea.value.trim();
+    textarea.value = '';
+    textarea.style.height = 'auto';
+    state.isLoading = true;
+    updateButtons();
+    clearObs();
+    state.streamStartTime = Date.now();
+    const ts = new Date().toLocaleTimeString();
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    state.messages.push({ role: 'user', content: sentText, timestamp: ts, message_id: msgId });
+    const container = document.getElementById('chat-container');
+    document.getElementById('welcome-message').style.display = 'none';
+    container.appendChild(createMsgEl({ role: 'user', content: sentText, timestamp: ts }, state.messages.length - 1));
+    scrollToBottom();
+    await sendStreamingRequest(data);
+}
+
+// ═══════════════════════════════════════════════════════
+//  STREAMING ENGINE
+// ═══════════════════════════════════════════════════════
+
+async function sendStreamingRequest(formData) {
+    currentAbortController = new AbortController();
+    document.getElementById('stop-btn').style.display = 'flex';
+    document.getElementById('send-btn').style.display = 'none';
+    const streamId = showStreamingContainer();
+    const events = [];
+    let finalContent = '';
+    let gotFirstEvent = false;
+    tokenQueues.delete(streamId);
+
+    try {
+        const response = await fetch('/api/debug/chat/stream', {
+            method: 'POST',
+            signal: currentAbortController.signal,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+            body: JSON.stringify({
+                agent_name: state.currentAgent,
+                message: JSON.stringify(formData),
+                session_id: state.sessionId,
+                user_id: state.userId,
+                features: formData
+            })
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        if (!response.body) throw new Error('No response body');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) { if (buffer.trim()) processRemainingBuffer(); break; }
+            buffer += decoder.decode(value, { stream: true });
+            processBufferMessages();
+        }
+
+        function processBufferMessages() {
+            const msgs = buffer.split(/(?=\nevent:)/);
+            if (msgs.length > 1) {
+                for (let i = 0; i < msgs.length - 1; i++) {
+                    const m = msgs[i].trim();
+                    if (m) processSSEMsg(m.startsWith('event:') ? m : 'event:' + m);
+                }
+                buffer = msgs[msgs.length - 1];
+            } else {
+                const parts = buffer.split('\n\n');
+                if (parts.length > 1) {
+                    buffer = parts.pop() || '';
+                    parts.forEach(m => { if (m.trim()) processSSEMsg(m); });
+                }
+            }
+        }
+
+        function processRemainingBuffer() {
+            buffer.split(/(?=\nevent:)/).forEach(m => {
+                const s = m.trim();
+                if (s) processSSEMsg(s.startsWith('event:') ? s : 'event:' + s);
+            });
+            buffer = '';
+        }
+
+        function processSSEMsg(raw) {
+            if (!raw.trim()) return;
+            let eventType = 'message', eventData = null;
+            for (const line of raw.split('\n')) {
+                if (line.startsWith('event:')) eventType = line.slice(6).trim();
+                else if (line.startsWith('data:')) { try { eventData = JSON.parse(line.slice(5).trim()); } catch {} }
+            }
+            if (!eventData) return;
+            const type = eventData.type || eventType;
+
+            if (!gotFirstEvent && type !== 'session') {
+                gotFirstEvent = true;
+                document.getElementById(streamId + '-events')?.querySelector('.spin-placeholder')?.remove();
+            }
+
+            if (type === 'content') {
+                let text = eventData.text || eventData.content || '';
+                if (text) {
+                    try {
+                        const p = JSON.parse(text);
+                        if (typeof p === 'object') text = p.response || p.text || p.flight_plan || JSON.stringify(p, null, 2);
+                    } catch {}
+                    finalContent += text;
+                    appendTokenWithAnimation(streamId, text);
+                }
+            } else {
+                handleStreamEvent(eventData, streamId, events);
+            }
+            if (type === 'session' || eventData.session_id) state.sessionId = eventData.session_id;
+        }
+
+        finalizeStreamingContainer(streamId, finalContent, events);
+
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            addObsEvent('stopped', {});
+            finalizeStreamingContainer(streamId, '[Stopped]', []);
+        } else {
+            addObsEvent('error', { message: err.message });
+            finalizeStreamingContainer(streamId, 'Error: ' + err.message, []);
+        }
+    } finally {
+        state.isLoading = false;
+        updateButtons();
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('send-btn').style.display = '';
+        currentAbortController = null;
+        finalizeObs();
+        persistCurrentConvo();
+    }
+}
+
+function handleStreamEvent(data, containerId, events) {
+    events.push(data);
+    const type = data.type;
+    if (['thinking', 'tool_call', 'tool_result', 'error', 'stopped'].includes(type)) addObsEvent(type, data);
+
+    const evBox = document.getElementById(containerId + '-events');
+    if (!evBox) return;
+    if (type === 'thinking' || type === 'tool_call' || type === 'tool_result') {
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:7px;font-size:0.75rem';
+        if (type === 'thinking')
+            el.innerHTML = `<span style="color:#60a5fa;font-size:0.5rem">●</span><span style="color:#93c5fd">${escapeHtml(data.message || 'Thinking…')}</span>`;
+        else if (type === 'tool_call')
+            el.innerHTML = `<span style="color:#fbbf24;font-size:0.5rem">▶</span><span style="color:var(--t2)">Calling <code style="font-family:'JetBrains Mono',monospace;color:#fde68a;font-size:0.72rem">${escapeHtml(data.tool_name || '?')}</code></span>`;
+        else
+            el.innerHTML = `<span style="color:var(--green);font-size:0.5rem">✓</span><span style="color:var(--t2)">Result from <code style="font-family:'JetBrains Mono',monospace;color:#6ee7b7;font-size:0.72rem">${escapeHtml(data.tool_name || '?')}</code></span>`;
+        evBox.appendChild(el);
+        scrollToBottom();
+    }
+    if (type === 'error') {
+        const el = document.createElement('div');
+        el.style.cssText = 'font-size:0.75rem;color:#f87171';
+        el.textContent = 'Error: ' + (data.message || 'Unknown');
+        evBox.appendChild(el);
+    }
+}
+
+// Token animation
+const tokenQueues = new Map();
+const rawContentMap = new Map();
+const processorRunning = new Map();
+
+function appendTokenWithAnimation(cid, token) {
+    if (!tokenQueues.has(cid)) { tokenQueues.set(cid, []); rawContentMap.set(cid, ''); }
+    rawContentMap.set(cid, rawContentMap.get(cid) + token);
+    tokenQueues.get(cid).push(token);
+    if (!processorRunning.get(cid)) { processorRunning.set(cid, true); processTokenQueue(cid); }
+}
+
+function processTokenQueue(cid) {
+    const queue = tokenQueues.get(cid);
+    if (!queue || queue.length === 0) { processorRunning.set(cid, false); return; }
+    const contentDiv = document.getElementById(cid + '-content');
+    if (!contentDiv) { setTimeout(() => processTokenQueue(cid), 30); return; }
+    contentDiv.style.display = 'block';
+    const contentEl = contentDiv.querySelector('.md-out');
+    if (!contentEl) { setTimeout(() => processTokenQueue(cid), 30); return; }
+    document.getElementById(cid + '-events')?.querySelector('.spin-placeholder')?.remove();
+    queue.shift();
+    contentEl.className = 'md md-out';
+    contentEl.innerHTML = marked.parse(rawContentMap.get(cid) || '');
+    scrollToBottom();
+    setTimeout(() => processTokenQueue(cid), 20);
+}
+
+function showStreamingContainer() {
+    const id = 'stream-' + Date.now();
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'message-bubble fade-in';
+    div.style.justifyContent = 'flex-start';
+    div.innerHTML = `
+        <div style="max-width:680px;width:100%">
+            <div style="display:flex;align-items:flex-start;gap:11px">
+                <div class="asst-avatar">
+                    <svg style="width:14px;height:14px;color:var(--accent)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div id="${id}-events" style="display:flex;flex-direction:column;gap:5px">
+                        <div class="spin-placeholder think-row">
+                            <div class="think-dots">
+                                <div class="think-dot"></div>
+                                <div class="think-dot"></div>
+                                <div class="think-dot"></div>
+                            </div>
+                            <span style="font-size:0.75rem;color:var(--t3)">Thinking…</span>
+                        </div>
+                    </div>
+                    <div id="${id}-content" style="display:none;margin-top:6px">
+                        <div class="md-out" style="font-size:0.875rem;color:var(--t1)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    document.getElementById('welcome-message').style.display = 'none';
+    document.getElementById('chat-container').appendChild(div);
+    scrollToBottom();
+    return id;
+}
+
+function finalizeStreamingContainer(cid, content, events) {
+    const queue = tokenQueues.get(cid);
+    if (queue && queue.length > 0) { setTimeout(() => finalizeStreamingContainer(cid, content, events), 50); return; }
+    const container = document.getElementById(cid);
+    if (!container) return;
+    // Hide streaming status indicators (thinking dots, tool progress) — they're in-progress only
+    const evBox = document.getElementById(cid + '-events');
+    if (evBox) evBox.style.display = 'none';
+    const contentDiv = document.getElementById(cid + '-content');
+    if (contentDiv) contentDiv.style.display = 'block';
+    const ts = new Date().toLocaleTimeString();
+    const msgIndex = state.messages.length;
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    state.messages.push({ role: 'assistant', content, timestamp: ts, feedback: null, message_id: msgId });
+    const inner = container.querySelector('[style*="flex:1"]');
+    if (inner && !inner.querySelector('.fb-row')) {
+        const row = document.createElement('div');
+        row.className = 'fb-row msg-actions';
+        row.innerHTML = `
+            <span style="font-size:0.68rem;color:var(--t3)">${ts}</span>
+            <span style="flex:1"></span>
+            <button onclick="giveFeedback(${msgIndex},'up')" class="action-btn" title="Good response">
+                <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
+            </button>
+            <button onclick="giveFeedback(${msgIndex},'down')" class="action-btn" title="Bad response">
+                <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/></svg>
+            </button>
+            <button onclick="copyMsg(${msgIndex})" class="action-btn" title="Copy">
+                <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>`;
+        inner.appendChild(row);
+    }
+}
+
+// ── Feedback ────────────────────────────────────────────
+async function giveFeedback(index, feedback) {
+    if (index < 0 || index >= state.messages.length) return;
+    const msg = state.messages[index];
+    const prev = index > 0 ? state.messages[index - 1] : null;
+    try {
+        await fetch('/api/debug/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: state.sessionId || 'unknown',
+                message_index: index,
+                message_id: msg.message_id,
+                feedback,
+                agent_name: state.currentAgent,
+                user_message: prev?.role === 'user' ? prev.content : '',
+                assistant_message: msg.content
+            })
+        });
+        state.messages[index].feedback = feedback;
+        renderMessages();
+    } catch (e) { console.error('Feedback error', e); }
+}
+
+// ── Utilities ───────────────────────────────────────────
+function updateButtons() {
+    document.getElementById('send-btn').disabled = !state.currentAgent || state.isLoading;
+}
+function scrollToBottom() {
+    const c = document.getElementById('chat-container');
+    c.scrollTop = c.scrollHeight;
+}
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = String(text);
+    return d.innerHTML;
+}
+function copyMsg(index) {
+    const msg = state.messages[index];
+    if (msg) navigator.clipboard.writeText(msg.content).catch(() => {});
+}
+
+// ── Event handlers ──────────────────────────────────────
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+document.getElementById('new-chat-btn').addEventListener('click', () => { if (state.currentAgent) startNewChat(); });
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('clear-chat-btn').addEventListener('click', () => { if (state.currentAgent) startNewChat(); });
+
+const textarea = document.getElementById('main-textarea');
+textarea.addEventListener('input', () => { textarea.style.height = 'auto'; textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'; });
+textarea.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+document.getElementById('toggle-fields-btn').addEventListener('click', () => {
+    const c = document.getElementById('extra-fields-content');
+    const v = c.style.display === 'none' || c.style.display === '';
+    c.style.display = v ? 'grid' : 'none';
+    document.getElementById('fields-chevron').style.transform = v ? 'rotate(180deg)' : '';
+});
+
+document.getElementById('close-obs-btn').addEventListener('click', () => { document.getElementById('obs-panel').style.display = 'none'; });
+
+document.querySelectorAll('.obs-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.obs-tab').forEach(t => {
+            const active = t.dataset.tab === target;
+            t.classList.toggle('active', active);
+        });
+        document.getElementById('tab-activity').style.display = target === 'activity' ? 'flex' : 'none';
+        if (target === 'activity') document.getElementById('tab-activity').style.flexDirection = 'column';
+        document.getElementById('tab-schema').style.display = target === 'schema' ? 'block' : 'none';
+    });
+});
+// Ensure activity tab starts as flex column
+document.getElementById('tab-activity').style.display = 'flex';
+document.getElementById('tab-activity').style.flexDirection = 'column';
+
+document.getElementById('toggle-logs-btn').addEventListener('click', () => {
+    const logs = document.getElementById('advanced-logs');
+    const v = logs.style.display === 'none' || logs.style.display === '';
+    logs.style.display = v ? 'block' : 'none';
+    document.getElementById('logs-chevron').style.transform = v ? 'rotate(180deg)' : '';
+});
+
+document.getElementById('toggle-obs-btn').addEventListener('click', () => {
+    const panel = document.getElementById('obs-panel');
+    const isHidden = panel.style.display === 'none' || panel.style.display === '';
+    panel.style.display = isHidden ? 'flex' : 'none';
+    if (isHidden) panel.style.flexDirection = 'column';
+});
+
+// ── Init ────────────────────────────────────────────────
+fetchAgents();
+</script>
+</body>
+</html>

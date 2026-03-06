@@ -9,31 +9,43 @@
 AgentShip
 =========
 
-**Build and deploy AI agents in minutes, not weeks.**
+**The runtime-agnostic production layer for AI agents.**
 
-AgentShip is an open-source production framework for AI agents. It sits on top of Google ADK and LangGraph — giving you the REST API, session memory, observability, streaming, and MCP tool integration that these engines don't provide on their own.
+AgentShip is **LiteLLM for agent runtimes** — one interface to run your agents on Google ADK, LangGraph, or any future engine, plus the full production stack (REST API, PostgreSQL sessions, streaming, observability, MCP tools) that no engine ships with.
 
-Drop in a YAML file and a Python class. AgentShip does the rest.
+Write your agent once. Swap runtimes with one YAML line. Ship in an hour, not two weeks.
 
 .. code-block:: bash
 
    git clone https://github.com/Agent-Ship/agent-ship.git
    cd agent-ship
    make docker-setup
-   # ✅  API ready at http://localhost:7001
+   # ✅  API at http://localhost:7001   Studio at http://localhost:7001/studio
+
+----
+
+The Two Problems It Solves
+==========================
+
+**Production plumbing** — Every team rebuilds the same ~2,000 lines of infrastructure per agent: REST API, session storage, observability, streaming, Docker. That's two weeks of work that has nothing to do with what the agent does.
+
+**Framework lock-in** — Teams pick ADK or LangGraph on day one and build deep. Migrating later costs 3–6 months and 50–80% of the codebase rewritten.
+
+AgentShip eliminates both. Four pluggable layers — Engine, Memory, Observability, Tools — all swappable via YAML. Your Python class never changes.
 
 ----
 
 What You Get
 ============
 
-- **Auto-discovery** — agents register themselves from YAML, no manual wiring
-- **Dual engines** — Google ADK or LangGraph, configured per agent in YAML
-- **MCP integration** — STDIO and HTTP/OAuth transports for any MCP server
-- **Token-by-token streaming** — real SSE streaming with LangGraph + LiteLLM
+- **Auto-discovery** — agents register from two files (YAML + Python), no manual wiring
+- **Dual engines** — Google ADK or LangGraph + LiteLLM, set per agent in YAML
+- **Engine swap** — change ``execution_engine:`` in YAML; Python class unchanged
+- **MCP integration** — STDIO and HTTP/OAuth transports, tools auto-documented for LLM
+- **Token-by-token streaming** — real SSE with LangGraph + LiteLLM
 - **Session memory** — PostgreSQL-backed conversations, zero config
-- **Observability** — Opik tracing and metrics out of the box
-- **Debug UI** — browser-based chat interface at ``/debug-ui`` with stop button
+- **Observability** — Opik tracing out of the box; LangFuse coming
+- **AgentShip Studio** — browser chat UI at ``/studio`` with observability panel and stop button
 - **One-command Docker setup** — ``make docker-setup`` starts everything
 
 ----
@@ -43,19 +55,14 @@ Quick Start
 
 .. code-block:: bash
 
-   # 1. Clone and start
    git clone https://github.com/Agent-Ship/agent-ship.git
    cd agent-ship
-   make docker-setup
+   make docker-setup          # creates .env, starts API + PostgreSQL
 
-   # 2. Add your LLM key to .env
-   echo "OPENAI_API_KEY=sk-..." >> .env
-   make docker-restart
+   # Open Studio and start chatting
+   open http://localhost:7001/studio
 
-   # 3. Open the Debug UI and start chatting
-   open http://localhost:7001/debug-ui
-
-Your first agent is included — talk to it immediately. To create your own, see :doc:`user-guides/getting-started/quickstart`.
+Your first agent is included — talk to it immediately. To build your own, see :doc:`user-guides/getting-started/quickstart`.
 
 ----
 
@@ -64,6 +71,7 @@ Your first agent is included — talk to it immediately. To create your own, see
    :caption: Getting Started
 
    why-agentship
+   user-guides/architecture
    user-guides/getting-started/quickstart
    user-guides/getting-started/installation
    user-guides/getting-started/configuration

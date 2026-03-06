@@ -18,11 +18,11 @@ The setup script will:
 
 **Services available at:**
 - **API / Swagger**: http://localhost:7001/swagger
-- **Debug UI**: http://localhost:7001/debug-ui
+- **AgentShip Studio**: http://localhost:7001/studio
 
 ## Step 2: Chat with a Built-In Agent
 
-Open the Debug UI at http://localhost:7001/debug-ui, pick any agent, and start chatting. No extra setup needed.
+Open AgentShip Studio at http://localhost:7001/studio, pick any agent, and start chatting. No extra setup needed.
 
 Or use curl:
 

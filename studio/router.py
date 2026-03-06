@@ -238,6 +238,27 @@ async def get_agent_schema(agent_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/agents/{agent_name}/config")
+async def get_agent_config(agent_name: str):
+    """Get engine/model configuration for a specific agent (used by AgentShip Studio)."""
+    try:
+        agent = get_agent_instance(agent_name)
+        config = agent.agent_config
+        memory_backend = "in_memory"
+        if hasattr(config, "memory") and config.memory and hasattr(config.memory, "backend"):
+            memory_backend = config.memory.backend
+        return {
+            "engine": getattr(config, "execution_engine", "adk") or "adk",
+            "model": getattr(config, "llm_model", "unknown"),
+            "provider": getattr(config, "llm_provider_name", "unknown"),
+            "memory_backend": memory_backend,
+            "streaming_mode": getattr(config, "streaming_mode", "event_based") or "event_based",
+        }
+    except Exception as e:
+        logger.warning(f"Failed to get config for {agent_name}: {e}")
+        return {"engine": "unknown", "model": "unknown", "provider": "unknown", "memory_backend": "unknown", "streaming_mode": "event_based"}
+
+
 @router.post("/chat")
 async def debug_chat(request: DebugChatRequest):
     """
@@ -620,4 +641,5 @@ async def create_session(agent_name: str):
         message_count=0
     )
     return _sessions[session_id]
+
 

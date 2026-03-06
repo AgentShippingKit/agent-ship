@@ -23,7 +23,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev          - Start development server (http://localhost:7001)"
-	@echo "                      Debug UI available at http://localhost:7001/debug-ui"
+	@echo "                      Studio available at http://localhost:7001/studio"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-cov     - Run tests with coverage report"
 	@echo "  make lint         - Run code linters (flake8)"
@@ -51,7 +51,7 @@ docker-up: ## Start Docker containers (API, Swagger, Docs - everything at :7001)
 	@echo "   - API: http://localhost:7001"
 	@echo "   - Swagger: http://localhost:7001/swagger"
 	@echo "   - Docs: http://localhost:7001/docs (Sphinx docs built automatically)"
-	@echo "   - Debug UI: http://localhost:7001/debug-ui"
+	@echo "   - Studio: http://localhost:7001/studio"
 	@docker compose up -d --build || docker-compose up -d --build
 
 docker-down: ## Stop Docker containers

@@ -30,7 +30,7 @@ make docker-logs     # View logs
 ```
 
 **Ports:**
-- API/Swagger/Docs/Debug UI: `localhost:7001`
+- API/Swagger/Docs/AgentShip Studio: `localhost:7001`
 - PostgreSQL (external): `localhost:5433` (inside Docker: `postgres:5432`)
 
 ### Local Development (No Docker)
@@ -108,7 +108,7 @@ tests/
 ├── unit/                 # Unit tests
 └── integration/          # Integration tests
 
-debug_ui/                 # Gradio debug UI (localhost:7001/debug-ui)
+debug_ui/                 # AgentShip Studio (localhost:7001/studio)
 docs_sphinx/              # Sphinx documentation source
 agent_store_deploy/       # Database setup scripts
 service_cloud_deploy/     # Heroku deployment scripts
@@ -465,9 +465,23 @@ MCPServerRegistry._instance = None
 When server is running (port 7001):
 - **Swagger UI**: http://localhost:7001/swagger
 - **Documentation**: http://localhost:7001/docs
-- **Debug UI**: http://localhost:7001/debug-ui
+- **AgentShip Studio**: http://localhost:7001/studio (legacy `/debug-ui` → 301 redirect)
 - **Health**: http://localhost:7001/health
 - **Agent Chat**: POST http://localhost:7001/api/agents/chat
+
+### AgentShip Studio Debug API (`/api/debug/`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/debug/agents` | List all registered agents with schemas |
+| GET | `/api/debug/agents/{name}/schema` | Input/output schema for an agent |
+| GET | `/api/debug/agents/{name}/config` | Engine, model, provider, streaming mode |
+| POST | `/api/debug/chat` | Non-streaming chat (returns full response) |
+| POST | `/api/debug/chat/stream` | SSE streaming chat (`thinking`, `content`, `tool_call`, `tool_result`, `done`) |
+| POST | `/api/debug/feedback` | Record thumbs up/down feedback |
+| GET | `/api/debug/sessions` | List sessions |
+| POST | `/api/debug/sessions` | Create session |
+| DELETE | `/api/debug/sessions/{id}` | Delete session |
 
 ## Database Environments
 
@@ -491,7 +505,7 @@ When server is running (port 7001):
    - Restart server (auto-discovery)
 
 3. **Test Agent**
-   - Use Debug UI: http://localhost:7001/debug-ui
+   - Use AgentShip Studio: http://localhost:7001/studio
    - Or use Swagger: http://localhost:7001/swagger
    - Or curl/Postman
 
@@ -514,13 +528,13 @@ When server is running (port 7001):
   - Configure servers in `.mcp.settings.json` (global) or agent YAML (per-agent)
   - Tool documentation auto-generated from schemas
   - Event loop safe (auto-reconnects when needed)
-  - STDIO transport only (SSE/HTTP coming later)
+  - STDIO transport (local npx/Python) and HTTP/OAuth transport (GitHub, Slack, etc.) both supported
 - **Auto Tool Documentation**:
   - Tool schemas are single source of truth
   - Documentation auto-generated and injected into prompts
   - Works for all tool types (functions, MCP tools, agent tools)
   - Zero maintenance required
-- **Streaming**: LangGraph engine supports token-by-token streaming (`streaming_mode: token_by_token`)
+- **Streaming**: LangGraph engine supports token-by-token streaming (`streaming_mode: token_based`)
 - **Observability**: OPIK integration available for both ADK and LangGraph engines
 - **Memory optimization**: Target is 512MB memory limit (see health check endpoint)
 
@@ -558,9 +572,20 @@ self.agent_config.llm_model
 self.agent_config.temperature
 ```
 
+## Claude Code Skills
+
+Project-level skills live in `.claude/commands/` and are available to anyone who opens this repo in Claude Code.
+
+| Skill | Invoke | What it does |
+|-------|--------|--------------|
+| `/new-agent` | `/new-agent weather_agent` | Scaffolds a new agent (YAML + Python) with prompts for engine, model, instruction |
+| `/add-mcp` | `/add-mcp postgres` | Adds an MCP server to `.mcp.settings.json` and wires it to an agent |
+| `/run-tests` | `/run-tests unit` | Runs the right tests for changed code with correct flags |
+| `/studio` | `/studio` | Reference for Studio URLs, debug API endpoints, and troubleshooting |
+
 ## Debugging
 
 - **Logs**: Check `dev_app.log` or `make docker-logs`
-- **Debug UI**: http://localhost:7001/debug-ui for interactive testing
+- **AgentShip Studio**: http://localhost:7001/studio for interactive testing
 - **Health check**: http://localhost:7001/health shows memory usage
 - **PostgreSQL**: Connect with `psql -h localhost -p 5433 -U agentship_user -d agentship_session_store` (Docker) or port 5432 (local)

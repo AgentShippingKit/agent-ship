@@ -2,128 +2,118 @@
   <img src="branding/banners/github-banner@3x.png" alt="AgentShip" width="100%">
 </p>
 
+<h3 align="center">The runtime-agnostic production layer for AI agents.</h3>
+
 <p align="center">
-  <strong>Build and deploy AI agents in minutes, not weeks.</strong>
+  Write your agent once. Run it on ADK, LangGraph, or any future engine.<br>
+  Swap runtimes without touching agent logic. Ship in an hour, not two weeks.
 </p>
 
 <p align="center">
-  AgentShip is the <strong>production layer</strong> for AI agents. Built on Google ADK and LangGraph, it provides everything you need to ship agents to production: REST API, session management, observability, streaming, MCP integration, and one-command deployment.
-</p>
-
-<p align="center">
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white" alt="Python">
-  </a>
-  <a href="https://fastapi.tiangolo.com/">
-    <img src="https://img.shields.io/badge/FastAPI-0.119-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI">
-  </a>
-  <a href="https://github.com/google/generative-ai-python">
-    <img src="https://img.shields.io/badge/Google_ADK-1.15-4285F4?style=flat&logo=google&logoColor=white" alt="Google ADK">
-  </a>
-  <a href="https://www.langchain.com/">
-    <img src="https://img.shields.io/badge/LangGraph-Latest-121212?style=flat&logo=langchain&logoColor=white" alt="LangGraph">
-  </a>
-  <a href="https://modelcontextprotocol.io/">
-    <img src="https://img.shields.io/badge/MCP-Integrated-FF6B35?style=flat" alt="MCP">
-  </a>
-  <a href="https://www.postgresql.org/">
-    <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
-  </a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.119-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <a href="https://github.com/google/generative-ai-python"><img src="https://img.shields.io/badge/Google_ADK-1.15-4285F4?style=flat&logo=google&logoColor=white" alt="Google ADK"></a>
+  <a href="https://www.langchain.com/"><img src="https://img.shields.io/badge/LangGraph-Latest-121212?style=flat&logo=langchain&logoColor=white" alt="LangGraph"></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Integrated-FF6B35?style=flat" alt="MCP"></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 ---
 
-## ✨ Key Features
+## The problem
 
-- 🚀 **Dual Execution Engines** - Choose between Google ADK or LangGraph
-- 🔌 **MCP Integration** - STDIO and HTTP/OAuth MCP transports for both engines
-- 📝 **Auto Tool Documentation** - Tool schemas automatically generate LLM prompts
-- 🎯 **YAML Configuration** - Define agents declaratively, `agent_name` drives registry key
-- 💾 **Session Management** - PostgreSQL-backed conversation memory
-- 📊 **Observability** - Built-in OPIK integration for monitoring
-- 🌊 **Streaming Support** - Token-by-token and SSE streaming with Stop button
-- 🔧 **Debug UI** - Interactive interface with abort mid-stream support
-- 🐳 **Docker Ready** - One-command deployment with hot-reload
-- 🧪 **Integration Test Suite** - Comprehensive tests for agents, MCP, and streaming
+Every team building AI agents hits the same two walls.
+
+**Wall 1 — Production plumbing.** Your agent works in the notebook. Shipping it means building a REST API, wiring PostgreSQL session storage, setting up observability, writing Docker configs, handling streaming with error handling. That's ~2,000 lines of infrastructure code and two weeks of work that has nothing to do with what your agent actually does. And you rebuild it from scratch for every agent.
+
+**Wall 2 — Framework lock-in.** You pick ADK or LangGraph on day one and build deep. Three months later you need a capability from the other one. Migration cost: 3–6 months, 50–80% of your code rewritten. Architecture decisions made at the start compound into permanent constraints.
+
+```
+Without AgentShip:          Your Agent Logic
+                                  ↕  tightly coupled
+                             LangGraph / ADK / CrewAI
+                                  ↕  tightly coupled
+                            Memory · Observability · Tools
+
+With AgentShip:             Your Agent Logic (unchanged)
+                                  ↕  talks to abstraction
+                               AgentShip Interface
+                                  ↕  pluggable
+                       ADK  |  LangGraph  |  Future Engines
+                                  ↕  config-driven
+                       Memory  ·  Observability  ·  MCP Tools
+```
+
+> AgentShip is **LiteLLM for agent runtimes** — one interface to run your agents on ADK, LangGraph, or any future engine, plus the production stack (API, sessions, streaming, observability, MCP) that no engine ships with.
 
 ---
 
-## 🚀 Quick Start
+## The solution: four pluggable layers
 
-### First Time Setup
+| Layer | Abstracts | Implementations | How to swap |
+|---|---|---|---|
+| **Engine** | Execution runtime | Google ADK, LangGraph + LiteLLM | `execution_engine:` in YAML |
+| **Memory** | Short + long-term storage | mem0, Supermemory, in-memory | `memory_backend:` in YAML |
+| **Observability** | Tracing & monitoring | Opik, LangFuse | `observability:` in YAML |
+| **Tools** | Discovery & invocation | MCP — STDIO and HTTP/OAuth | `mcp.servers:` in YAML |
+
+Your agent code never touches these directly. It talks to the abstractions. Swap any layer without a rewrite.
+
+### Engine swap is one line
+
+```diff
+# main_agent.yaml
+  agent_name: my_agent
+  llm_model: gpt-4o
+- execution_engine: adk
++ execution_engine: langgraph
+```
+
+Your Python class is unchanged. Your tools are unchanged. Your prompts are unchanged.
+
+---
+
+## Quick start
+
 ```bash
-git clone https://github.com/AgentShippingKit/agent-ship.git
+git clone https://github.com/Agent-Ship/agent-ship.git
 cd agent-ship
-make docker-setup
+make docker-setup   # creates .env, prompts for API key, starts everything
 ```
 
-**That's it!** The script will:
-- ✅ Check Docker installation
-- ✅ Create `.env` file
-- ✅ Prompt for your API key
-- ✅ Start everything
+| Service | URL |
+|---|---|
+| API + Swagger | http://localhost:7001/swagger |
+| AgentShip Studio | http://localhost:7001/studio |
+| Docs | http://localhost:7001/docs |
 
-**Access your services:**
-- 🔌 **API (Swagger)**: http://localhost:7001/swagger
-- 📚 **Documentation**: http://localhost:7001/docs
-- 🔧 **Debug UI**: http://localhost:7001/debug-ui
-
-### Next Time (After First Setup)
 ```bash
-make docker-up      # Start containers (with hot-reload)
-make docker-down    # Stop containers
-make docker-logs    # View logs
+make docker-up      # start (subsequent runs)
+make docker-logs    # tail logs
+make docker-down    # stop
 ```
-
-**Hot-reload enabled!** Edit code in `src/` and changes auto-reload.
 
 ---
 
-## 🏗️ Architecture
+## Build an agent
 
-AgentShip's architecture is designed for production-scale AI agent deployment:
+Two files. That's an agent.
 
-<p align="center">
-  <img src="branding/Architecture.png" alt="AgentShip Architecture" width="100%">
-</p>
-
-The system includes:
-- **FastAPI Entrypoint**: HTTP, SSE, and WebSocket support
-- **Main Ecosystem**: YAML-based agent configurations, LLM sidecar, observability, and guardrails
-- **LLM Tooling Layer**: Utils, tools, and **MCP integration**
-- **Auto Tool Documentation**: Automatic prompt generation from tool schemas
-- **Memory Layer**: Session memory, external context stores, caching, and file storage
-- **Data Ingestion Pipeline**: Processes data from various sources
-- **Observability**: OPIK & Langfuse integration for monitoring and evaluation
-
----
-
-## 📝 Create Your First Agent
-
-### Basic Agent
-
-```bash
-# 1. Create directory
-mkdir -p src/all_agents/my_agent
-cd src/all_agents/my_agent
-
-# 2. Create main_agent.yaml
-cat > main_agent.yaml << EOF
+**`src/all_agents/my_agent/main_agent.yaml`**
+```yaml
 agent_name: my_agent
 llm_provider_name: openai
 llm_model: gpt-4o
 temperature: 0.4
-execution_engine: adk  # or langgraph
-description: My helpful assistant
+execution_engine: adk        # change to langgraph — class below is unchanged
+description: A helpful assistant
 instruction_template: |
   You are a helpful assistant that answers questions clearly.
-EOF
+```
 
-# 3. Create main_agent.py
-cat > main_agent.py << EOF
+**`src/all_agents/my_agent/main_agent.py`**
+```python
 from src.all_agents.base_agent import BaseAgent
 from src.service.models.base_models import TextInput, TextOutput
 from src.agent_framework.utils.path_utils import resolve_config_path
@@ -133,87 +123,33 @@ class MyAgent(BaseAgent):
         super().__init__(
             config_path=resolve_config_path(relative_to=__file__),
             input_schema=TextInput,
-            output_schema=TextOutput
+            output_schema=TextOutput,
         )
-EOF
 ```
 
-Restart server → Agent is automatically discovered!
-
-### Agent with MCP Tools
-
-```yaml
-agent_name: database_agent
-llm_provider_name: openai
-llm_model: gpt-4o-mini
-temperature: 0.2
-execution_engine: adk  # MCP works with both adk and langgraph!
-description: Database agent with MCP PostgreSQL integration
-instruction_template: |
-  You are a database assistant. Use the available tools to query and analyze data.
-
-mcp:
-  servers:
-    - postgres  # References server from .mcp.settings.json
-```
-
-**Configure MCP servers** in `.mcp.settings.json`:
-```json
-{
-  "servers": {
-    "postgres": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgresql://user:password@host:5432/database"
-      ],
-      "env": {}
-    },
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
-    }
-  }
-}
-```
-
-**That's it!** The agent automatically:
-- ✅ Discovers MCP tools from the server
-- ✅ Generates tool documentation for the LLM
-- ✅ Injects it into the system prompt
-- ✅ Handles event loop management
-- ✅ Works with both ADK and LangGraph engines
+Restart the server — the agent is auto-discovered. No registration step.
 
 ---
 
-## 🔌 MCP Integration
+## MCP tools
 
-AgentShip has **production-ready MCP (Model Context Protocol) integration**:
+AgentShip has production-ready MCP integration across both engines. Declare the servers an agent should use in its YAML:
 
-### Features
+```yaml
+# main_agent.yaml
+mcp:
+  servers:
+    - postgres   # STDIO — shared client, env-var connection string
+    - github     # HTTP/OAuth — per-agent isolated client
+```
 
-- ✅ **STDIO Transport** - Connect to local MCP servers via stdin/stdout
-- ✅ **HTTP/OAuth Transport** - Connect to remote services (GitHub, Slack, etc.) via OAuth
-- ✅ **Auto Tool Discovery** - Tools are discovered automatically from MCP servers
-- ✅ **Auto Documentation** - Tool schemas generate LLM-friendly documentation
-- ✅ **Dual Engine Support** - Works with both ADK and LangGraph
-- ✅ **Per-Agent Client Isolation** - OAuth servers get separate clients per agent
-- ✅ **Env Var Resolution** - `${VAR}` tokens in command args resolved at load time
-- ✅ **Event Loop Safe** - Automatic reconnection on event loop changes
+AgentShip connects at startup, fetches tool schemas, and automatically injects LLM-readable documentation into the agent's system prompt. Zero manual work.
 
-### Transports
+<details>
+<summary><strong>MCP server configuration reference</strong></summary>
 
-| Transport | Use Case | Auth |
-|-----------|----------|------|
-| `stdio` | Local servers (`npx`, Python scripts) | None (env vars) |
-| `http` / `sse` | Remote APIs (GitHub, Slack, etc.) | OAuth 2.0 |
+**`.mcp.settings.json`** — define servers once, reference by name in any agent YAML:
 
-### Configuration
-
-**Global Config** (`.mcp.settings.json`):
 ```json
 {
   "servers": {
@@ -239,220 +175,135 @@ AgentShip has **production-ready MCP (Model Context Protocol) integration**:
 }
 ```
 
-**Agent YAML**:
-```yaml
-mcp:
-  servers:
-    - postgres   # STDIO: shared client
-    - github     # HTTP/OAuth: per-agent client
-```
+**Transports:**
 
-### OAuth Setup
+| | Use case | Auth |
+|---|---|---|
+| `stdio` | Local processes (`npx`, Python scripts) | env vars |
+| `http` | Remote APIs (GitHub, Slack, etc.) | OAuth 2.0 |
 
-```bash
-# Connect a user to GitHub MCP (opens browser)
-pipenv run agentship mcp connect github --user-id alice
-
-# List active connections
-pipenv run agentship mcp list-connections --user-id alice
-```
-
-### Example Agents
-
-- `src/all_agents/github_adk_mcp_agent/` — GitHub via HTTP/OAuth, ADK engine
-- `src/all_agents/github_langgraph_mcp_agent/` — GitHub via HTTP/OAuth, LangGraph engine
-
-### How It Works
-
-1. **Agent Initialization** - MCP servers configured in YAML
-2. **Tool Discovery** - AgentShip connects to MCP servers and fetches tool schemas
-3. **Auto Documentation** - `ToolDocumentationGenerator` creates LLM-friendly docs
-4. **Prompt Injection** - `PromptBuilder` injects docs into the system prompt
-5. **Runtime** - Agent uses tools naturally; AgentShip handles all MCP transport
+</details>
 
 ---
 
-## 🤖 Auto Tool Documentation
+## Impact
 
-AgentShip automatically generates tool documentation for LLMs:
-
-### Features
-
-- ✅ **Single Source of Truth** - Tool schemas define documentation
-- ✅ **Always Accurate** - Documentation updates automatically with schema changes
-- ✅ **All Tool Types** - Functions, MCP tools, agent tools
-- ✅ **Engine Agnostic** - Works with ADK and LangGraph
-- ✅ **Zero Maintenance** - No manual documentation needed
-
-### How It Works
-
-```python
-# Tool schemas are automatically extracted
-{
-  "name": "query",
-  "description": "Execute SQL query",
-  "parameters": {
-    "sql": {"type": "string", "required": true}
-  }
-}
-
-# Converted to LLM-friendly documentation
-"""
-## Available Tools
-
-### query
-**Description:** Execute SQL query
-**Parameters:**
-- `sql` (string, **required**)
-
-**Example:**
-```json
-{"sql": "SELECT * FROM table"}
-```
-"""
-
-# Automatically injected into system prompt
-# LLM sees accurate, up-to-date tool documentation!
-```
-
-No manual work required - schemas are the single source of truth.
+| | Without AgentShip | With AgentShip |
+|---|---|---|
+| Time to production (per agent) | 2 weeks | **1 hour** |
+| Infrastructure code | ~2,000 lines | **~50 lines** (agent logic only) |
+| Observability setup | 2–3 days | **0** (built-in) |
+| Session management | 2–3 days | **0** (built-in) |
+| Engine migration | 3–6 months, 50–80% rewrite | **One line in YAML** |
+| MCP tool integration | Manual per-framework | **Config declaration, auto-discovered** |
 
 ---
 
-## 🔧 Debug UI
+## Example agents
 
-AgentShip includes a **Gradio-based Debug UI** for testing agents interactively:
+The GitHub and PostgreSQL pairs are the clearest demonstration of runtime-agnostic design — identical capability, different engine.
 
-**Access**: http://localhost:7001/debug-ui (same port as API)
-
-Features:
-- 💬 Interactive chat with any registered agent
-- 📝 Dynamic input forms from Pydantic schemas
-- 🔍 Real-time debug logs
-- 🔄 Session management (new/clear conversations)
-- ⏹ **Stop button** — abort a running stream mid-response
-- 🔌 Works with MCP-enabled agents
-
----
-
-## 🛠️ Commands
-
-### Docker Development (Recommended)
-```bash
-make docker-setup   # First-time setup (builds + starts)
-make docker-up      # Start containers (after first setup)
-make docker-down    # Stop containers
-make docker-restart # Restart containers
-make docker-reload  # Hard reload (rebuild + restart)
-make docker-logs    # View logs
-```
-
-### Local Development (No Docker)
-```bash
-make dev            # Start dev server → http://localhost:7001
-                    # Debug UI at → http://localhost:7001/debug-ui
-```
-
-### Testing
-```bash
-make test           # Run all tests
-make test-cov       # Run tests with coverage
-
-# Integration tests (by scope)
-pipenv run pytest tests/unit/ -v                              # Unit tests only
-pipenv run pytest tests/integration/ -v                       # All integration tests
-pipenv run pytest tests/integration/test_agent_naming.py -v  # Agent naming
-pipenv run pytest tests/integration/test_mcp_infrastructure.py -v  # MCP isolation
-pipenv run pytest tests/integration/test_streaming.py -v     # Streaming events
-```
-
-### Deploy to Heroku
-```bash
-make heroku-deploy  # Deploy to Heroku (one command)
-```
-
-### Other Commands
-```bash
-make help           # See all commands
-make lint           # Run linter
-make format         # Format code
-```
+| Agent | Demonstrates |
+|---|---|
+| [`single_agent_pattern/`](src/all_agents/single_agent_pattern/) | Minimal two-file agent |
+| [`orchestrator_pattern/`](src/all_agents/orchestrator_pattern/) | Sub-agents as tools |
+| [`tool_pattern/`](src/all_agents/tool_pattern/) | Custom function tools |
+| [`file_analysis_agent/`](src/all_agents/file_analysis_agent/) | PDF and document parsing |
+| [`postgres_adk_mcp_agent/`](src/all_agents/postgres_adk_mcp_agent/) | STDIO MCP · ADK engine |
+| [`postgres_langgraph_mcp_agent/`](src/all_agents/postgres_langgraph_mcp_agent/) | STDIO MCP · LangGraph engine |
+| [`github_adk_mcp_agent/`](src/all_agents/github_adk_mcp_agent/) | HTTP/OAuth MCP · ADK engine |
+| [`github_langgraph_mcp_agent/`](src/all_agents/github_langgraph_mcp_agent/) | HTTP/OAuth MCP · LangGraph engine — **engine swap demo** |
 
 ---
 
-## 🗄️ Database Environments
+## Reference
 
-AgentShip uses PostgreSQL for session storage. Different environments use different databases:
+<details>
+<summary><strong>All make commands</strong></summary>
 
-| Environment | Command | Database | Access |
+```bash
+# Docker (recommended)
+make docker-setup    # first-time setup
+make docker-up       # start
+make docker-down     # stop
+make docker-restart  # restart
+make docker-reload   # hard rebuild + restart
+make docker-logs     # tail logs
+
+# Local (no Docker)
+make dev             # start at localhost:7001
+
+# Quality
+make test            # run all tests
+make test-cov        # tests + coverage report
+make lint            # flake8
+make format          # black
+
+# Deploy
+make heroku-deploy   # one-command Heroku deploy
+make help            # full command list
+```
+
+</details>
+
+<details>
+<summary><strong>Tests</strong></summary>
+
+```bash
+pipenv run pytest tests/unit/ -v
+pipenv run pytest tests/integration/ -v
+pipenv run pytest tests/integration/test_agent_naming.py -v
+pipenv run pytest tests/integration/test_mcp_infrastructure.py -v
+pipenv run pytest tests/integration/test_streaming.py -v
+```
+
+> Tests requiring a live database check `AGENT_SESSION_STORE_URI` and skip if unset.
+> Tests requiring an LLM key check `OPENAI_API_KEY` and skip if unset.
+
+</details>
+
+<details>
+<summary><strong>Database environments</strong></summary>
+
+| Environment | Command | Host | Port |
 |---|---|---|---|
-| **Docker** | `make docker-up` | Docker PostgreSQL (`agentship_session_store`) | `postgres:5432` (inside containers), `localhost:5433` (external) |
-| **Local** | `make dev` | Local PostgreSQL (`agentship_session_store`) | `localhost:5432` |
-| **Heroku** | Auto-provisioned | Heroku PostgreSQL | `DATABASE_URL` env var |
+| Docker | `make docker-up` | `postgres` (service name) | `5432` internal · `5433` external |
+| Local | `make dev` | `localhost` | `5432` |
+| Heroku | auto-provisioned | `DATABASE_URL` env var | — |
 
-**Note**: Docker and local development use separate databases. Data does not sync between them.
+Docker containers communicate via service names, not `localhost`. The `docker-compose.yml` overrides `AGENT_SESSION_STORE_URI` automatically.
 
-### Docker Networking
-
-Inside Docker, containers communicate via service names, not `localhost`:
-- ✅ `postgres:5432` - Correct (Docker service name)
-- ❌ `localhost:5432` - Wrong (refers to container's own network)
-
-The `docker-compose.yml` automatically overrides the database URL for Docker networking.
+</details>
 
 ---
 
-## 📚 Documentation
+## Roadmap
 
-### Online Docs (When Running)
-- **📖 Full Documentation**: http://localhost:7001/docs
-- **🚀 API Reference**: http://localhost:7001/swagger
-- **🔧 Debug UI**: http://localhost:7001/debug-ui
+**Now (v1, March 2026):** ADK · LangGraph · MCP STDIO + HTTP/OAuth · PostgreSQL sessions · Opik observability · AgentShip Studio · Auto tool documentation · Docker · Three streaming modes
 
-### Documentation Files
-- **📘 CLAUDE.md** - Developer guide for Claude Code
-- **📙 Architecture** - See `branding/Architecture.png`
+**Q2–Q3 2026:** OpenAI Agents SDK engine · CrewAI engine · mem0 + Supermemory backends · LangFuse observability · Response caching · Guardrails · A2A protocol · AgentShip CLI
+
+**Longer term:** Eval framework · pgvector memory · AgentShip Hub (community registry) · One-click Heroku/Render/Railway deploy
 
 ---
 
-## 🎯 Example Agents
+## Contributing
 
-AgentShip includes several example patterns:
+The most valuable contributions are new implementations of the four pluggable layers:
 
-1. **Single Agent** (`single_agent_pattern/`) - Simple one-agent flow
-2. **Orchestrator** (`orchestrator_pattern/`) - Main agent + sub-agents
-3. **Tool Pattern** (`tool_pattern/`) - Agent with custom tools
-4. **File Analysis** (`file_analysis_agent/`) - PDF/document analysis
-5. **PostgreSQL MCP** (`postgres_mcp_agent/`) - STDIO MCP integration example
-6. **GitHub ADK MCP** (`github_adk_mcp_agent/`) - HTTP/OAuth MCP with ADK
-7. **GitHub LangGraph MCP** (`github_langgraph_mcp_agent/`) - HTTP/OAuth MCP with LangGraph
+- **New engines** — OpenAI Agents SDK, CrewAI, Autogen adapters
+- **New memory backends** — Zep, Pinecone, custom vector stores
+- **New observability backends** — LangFuse, custom tracing integrations
+- **New MCP transports** — additional protocol implementations
 
----
+Check [`good first issue`](https://github.com/Agent-Ship/agent-ship/labels/good%20first%20issue), read [`CLAUDE.md`](CLAUDE.md) for the developer guide, then:
 
-## 🌟 Production Features
+```bash
+make test && make lint
+```
 
-- ✅ **Dual Engines** - ADK (Google) and LangGraph
-- ✅ **MCP Integration** - STDIO and HTTP/OAuth MCP transports
-- ✅ **Per-Agent MCP Isolation** - OAuth clients separated per agent
-- ✅ **Env Var Resolution** - `${VAR}` resolved in MCP command args
-- ✅ **Auto Tool Docs** - Zero-maintenance tool documentation
-- ✅ **Session Memory** - PostgreSQL-backed conversations
-- ✅ **Streaming** - Token-by-token and SSE with abort support
-- ✅ **Observability** - OPIK integration
-- ✅ **Hot Reload** - Development-friendly
-- ✅ **Docker Ready** - Production deployment
-- ✅ **YAML-Based Naming** - `agent_name` in YAML drives registry key
-- ✅ **Event Loop Safe** - Robust async handling
-- ✅ **Integration Tests** - Comprehensive test suite for all features
+All PRs require passing integration tests.
 
 ---
 
-## 🤝 Contributing
-
-Contributions welcome! Please check existing issues or create new ones.
-
----
-
-## 📄 License
-
-**MIT License** | [GitHub](https://github.com/AgentShippingKit/agent-ship)
+<p align="center">MIT License · Built by <a href="https://github.com/Agent-Ship/agent-ship">AgentShip</a> · Open source, no vendor allegiance</p>
