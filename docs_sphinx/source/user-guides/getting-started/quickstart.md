@@ -1,8 +1,8 @@
 # Quick Start
 
-Get AgentShip running and your first agent deployed in under 5 minutes.
+Get AgentShip running and your first agent in under 5 minutes.
 
-## Step 1: Clone and Start
+## Step 1: Run AgentShip
 
 ```bash
 git clone https://github.com/Agent-Ship/agent-ship.git
@@ -10,43 +10,22 @@ cd agent-ship
 make docker-setup
 ```
 
-The setup script will:
-- ✅ Check Docker installation
-- ✅ Create a `.env` file and prompt for your API key
-- ✅ Start the API server and PostgreSQL
-- ✅ Print service URLs when ready
+Setup will prompt for your API key, create `.env`, and start the API + PostgreSQL. When ready:
 
-**Services available at:**
-- **API / Swagger**: http://localhost:7001/swagger
-- **AgentShip Studio**: http://localhost:7001/studio
+| Service | URL |
+|---------|-----|
+| AgentShip Studio | http://localhost:7001/studio |
+| API / Swagger | http://localhost:7001/swagger |
 
-## Step 2: Chat with a Built-In Agent
+## Step 2: Chat with a Built-in Agent
 
-Open AgentShip Studio at http://localhost:7001/studio, pick any agent, and start chatting. No extra setup needed.
-
-Or use curl:
-
-```bash
-curl -X POST http://localhost:7001/api/agents/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "translation_agent",
-    "user_id": "demo",
-    "session_id": "demo-session",
-    "query": {"text": "Hello!", "from_language": "English", "to_language": "Spanish"},
-    "features": []
-  }'
-```
+Open http://localhost:7001/studio, pick any agent, and start chatting. No extra setup.
 
 ## Step 3: Create Your First Agent
 
-### 1. Create the directory
+Create two files in `src/all_agents/my_agent/`:
 
-```bash
-mkdir -p src/all_agents/my_agent
-```
-
-### 2. Add `main_agent.yaml`
+**`main_agent.yaml`**
 
 ```yaml
 agent_name: my_agent
@@ -56,10 +35,10 @@ temperature: 0.4
 execution_engine: adk   # or langgraph
 description: My helpful assistant
 instruction_template: |
-  You are a helpful assistant that answers questions clearly and concisely.
+  You are a helpful assistant that answers questions clearly.
 ```
 
-### 3. Add `main_agent.py`
+**`main_agent.py`**
 
 ```python
 from src.all_agents.base_agent import BaseAgent
@@ -75,44 +54,18 @@ class MyAgent(BaseAgent):
         )
 ```
 
-### 4. Restart and test
+Restart: `make docker-restart`. Your agent is auto-discovered — no registration.
 
-```bash
-make docker-restart
-```
+## Next Steps
 
-Your agent is automatically discovered — no registration needed.
-
-```bash
-curl -X POST http://localhost:7001/api/agents/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "my_agent",
-    "user_id": "demo",
-    "session_id": "s1",
-    "query": {"text": "Hello!"},
-    "features": []
-  }'
-```
-
----
+- [Agent Configuration](../building-agents/agent-configuration.md) — YAML fields, engines, streaming
+- [Agent Patterns](../building-agents/patterns/single-agent.md) — single agent, orchestrator, tools
+- [MCP Integration](../mcp-integration.md) — PostgreSQL, GitHub, and other MCP servers
 
 ## Local Development (No Docker)
 
 ```bash
 pipenv install
 cp .env.example .env   # add your API key
-make dev               # starts on http://localhost:7001
+make dev               # http://localhost:7001
 ```
-
----
-
-## Next Steps
-
-- [Agent Configuration](../building-agents/agent-configuration.md) — YAML fields, engines, streaming modes
-- [Agent Patterns](../building-agents/patterns/single-agent.md) — single agent, orchestrator, tool pattern
-- [MCP Integration](../mcp-integration.md) — connect PostgreSQL, GitHub, and other MCP servers
-
----
-
-**Questions?** [Open an issue](https://github.com/Agent-Ship/agent-ship/issues) on GitHub.

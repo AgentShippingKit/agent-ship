@@ -8,7 +8,7 @@ AgentShip is the production layer above execution engines (ADK, LangGraph) and b
 |---|---|---|---|
 | **Engine** | Execution runtime | Google ADK, LangGraph + LiteLLM | `execution_engine:` in YAML |
 | **Memory** | Short + long-term storage | mem0, Supermemory, in-memory | `memory_backend:` in YAML |
-| **Observability** | Tracing & monitoring | Opik, LangFuse | `observability:` in YAML |
+| **Observability** | Tracing & monitoring | Opik (LangFuse planned) | `observability:` in YAML |
 | **Tools** | Discovery & invocation | MCP — STDIO and HTTP/OAuth | `mcp.servers:` in YAML |
 
 ## System Diagram
