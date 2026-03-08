@@ -8,8 +8,10 @@ load_dotenv()
 
 
 logger = logging.getLogger(__name__)
+
+
 class LLMProviderName(Enum):
-    """Name of the LLM provider."""
+    """User-facing provider name (used in agent YAML as llm_provider_name)."""
     OPENAI = "openai"
     CLAUDE = "claude"
     GEMINI = "gemini"
@@ -17,109 +19,186 @@ class LLMProviderName(Enum):
     def __str__(self):
         return self.value
 
+
 class LLMModel(Enum):
-    """Name of the LLM model."""
+    """User-facing model names (used in agent YAML as llm_model)."""
+    # OpenAI
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"
-    GPT_3_5_TURBO = "gpt-3.5-turbo"
-    CLAUDE_3_5_SONNET = "claude-3-5-sonnet-20241022"
-    CLAUDE_3_5_HAIKU = "claude-3-5-haiku-20241022"
+    GPT_3_5_TURBO = "gpt-3.5-turbo"   # legacy, kept for backwards compat
+    GPT_4_1 = "gpt-4.1"
+    GPT_4_1_MINI = "gpt-4.1-mini"
+    O1 = "o1"
+    O1_MINI = "o1-mini"
+    O3 = "o3"
+    O3_MINI = "o3-mini"
+    # Claude
+    CLAUDE_3_5_SONNET = "claude-3-5-sonnet"
+    CLAUDE_3_5_HAIKU = "claude-3-5-haiku"
+    CLAUDE_3_7_SONNET = "claude-3-7-sonnet"
+    CLAUDE_OPUS_4 = "claude-opus-4"
+    CLAUDE_SONNET_4 = "claude-sonnet-4"
+    # Gemini (1.5 models shut down Sep 2025 — kept in enum for YAML parse compat only)
     GEMINI_1_5_PRO = "gemini-1.5-pro"
     GEMINI_1_5_FLASH = "gemini-1.5-flash"
+    GEMINI_2_0_FLASH = "gemini-2.0-flash"
+    GEMINI_2_0_FLASH_LITE = "gemini-2.0-flash-lite"
+    GEMINI_2_5_PRO = "gemini-2.5-pro"
+    GEMINI_2_5_FLASH = "gemini-2.5-flash"
+    GEMINI_2_5_FLASH_LITE = "gemini-2.5-flash-lite"
 
     def __str__(self):
         return self.value
+
 
 class ProviderAPIKey(Enum):
     """API key for the LLM provider."""
     OPENAI = os.getenv("OPENAI_API_KEY", "")
     CLAUDE = os.getenv("ANTHROPIC_API_KEY", "")
-    GEMINI = os.getenv("GOOGLE_API_KEY", "")
+    GEMINI = os.getenv("GEMINI_API_KEY")
 
     def __str__(self):
         return self.value
 
 
 class LLMProvider:
-    """
-    Configuration for a specific LLM provider.
-    This configuration is used to configure the LLM provider.
-    It is used to configure the name, API key, models, default model, and temperature.
-    It is also used to validate that the default model is in the models list.
-    """
+    """Configuration for a specific LLM provider."""
 
-    def __init__(self, name: LLMProviderName, api_key: ProviderAPIKey, models: List[LLMModel], 
-                default_model: LLMModel, temperature: float = 0.7):
+    def __init__(
+        self,
+        name: LLMProviderName,
+        api_key: ProviderAPIKey,
+        models: List[LLMModel],
+        default_model: LLMModel,
+        temperature: float = 0.7,
+        litellm_prefix: str | None = None,
+        model_aliases: dict[str, str] | None = None,
+    ):
         self._name: LLMProviderName = name
         self._api_key: ProviderAPIKey = api_key
         self._models: List[LLMModel] = models
         self._default_model: LLMModel = default_model
         self._temperature = temperature
-        
-        # Validate that default_model is in the models list
+        # litellm_prefix: the prefix LiteLLM expects (e.g. "anthropic" for Claude).
+        # Defaults to the user-facing name when they match.
+        self._litellm_prefix: str = litellm_prefix or name.value
+        # model_aliases: maps user-facing model name to the actual API model ID.
+        # Lets users write "gemini-1.5-pro" while we resolve to "gemini-1.5-pro-002".
+        self._model_aliases: dict[str, str] = model_aliases or {}
+
         if default_model not in self._models:
-            raise ValueError(f"Default model '{default_model}' not found in available models: {models}")
-    
+            raise ValueError(
+                f"Default model '{default_model}' not found in available models: {models}"
+            )
+
     @property
     def name(self) -> LLMProviderName:
-        """Get the provider name."""
         return self._name
-    
+
     @property
     def api_key(self) -> str:
-        """Get the provider API key."""
         return self._api_key.value
 
     @property
     def default_model(self) -> LLMModel:
-        """Get the provider default model."""
         return self._default_model
 
     @property
     def temperature(self) -> float:
-        """Get the provider temperature."""
         return self._temperature
 
     @property
     def models(self) -> List[LLMModel]:
-        """Get the provider models."""
         return self._models
 
     def get_model_string(self, model_name: str) -> str:
-        """Get the model string for LiteLLM."""
-        return f"{self.name}/{model_name}"
-    
+        """Return the LiteLLM model string (prefix/model-id), resolving aliases."""
+        resolved = self._model_aliases.get(model_name, model_name)
+        if resolved != model_name:
+            logger.debug("Model alias resolved: %s -> %s", model_name, resolved)
+        return f"{self._litellm_prefix}/{resolved}"
+
     def __str__(self):
-        return f"LLMProvider(name={self.name.value}, models={self.models}, default_model={self.default_model.value}, temperature={self.temperature})"
+        return (
+            f"LLMProvider(name={self.name.value}, "
+            f"litellm_prefix={self._litellm_prefix}, "
+            f"default_model={self.default_model.value})"
+        )
 
 
 class LLMProviderConfig:
     """Configuration manager for all LLM providers and their models."""
-    
-    # OpenAI provider
+
+    # ── OpenAI ────────────────────────────────────────────────────────────────
     openai = LLMProvider(
         name=LLMProviderName.OPENAI,
         api_key=ProviderAPIKey.OPENAI,
-        models=[LLMModel.GPT_4O, LLMModel.GPT_4O_MINI, LLMModel.GPT_3_5_TURBO],
-        default_model=LLMModel.GPT_4O_MINI
+        models=[
+            LLMModel.GPT_4_1,
+            LLMModel.GPT_4_1_MINI,
+            LLMModel.GPT_4O,
+            LLMModel.GPT_4O_MINI,
+            LLMModel.O3,
+            LLMModel.O3_MINI,
+            LLMModel.O1,
+            LLMModel.O1_MINI,
+            LLMModel.GPT_3_5_TURBO,
+        ],
+        default_model=LLMModel.GPT_4O_MINI,
     )
-    
-    # Claude provider
+
+    # ── Anthropic / Claude ────────────────────────────────────────────────────
+    # YAML uses llm_provider_name: claude  (user-friendly)
+    # LiteLLM requires the "anthropic/" prefix in model strings
     claude = LLMProvider(
         name=LLMProviderName.CLAUDE,
         api_key=ProviderAPIKey.CLAUDE,
-        models=[LLMModel.CLAUDE_3_5_SONNET, LLMModel.CLAUDE_3_5_HAIKU],
-        default_model=LLMModel.CLAUDE_3_5_SONNET,
+        litellm_prefix="anthropic",
+        models=[
+            LLMModel.CLAUDE_SONNET_4,
+            LLMModel.CLAUDE_OPUS_4,
+            LLMModel.CLAUDE_3_7_SONNET,
+            LLMModel.CLAUDE_3_5_SONNET,
+            LLMModel.CLAUDE_3_5_HAIKU,
+        ],
+        default_model=LLMModel.CLAUDE_SONNET_4,
+        model_aliases={
+            # User-friendly names → versioned API IDs
+            "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku": "claude-3-5-haiku-20241022",
+            "claude-3-7-sonnet": "claude-3-7-sonnet-20250219",
+            "claude-opus-4": "claude-opus-4-20250514",
+            "claude-sonnet-4": "claude-sonnet-4-20250514",
+        },
     )
 
-    # Gemini provider
+    # ── Gemini ────────────────────────────────────────────────────────────────
+    # Availability (Google AI API with GEMINI_API_KEY):
+    #   gemini-1.5-*         → shut down Sep 24–29 2025, do NOT use
+    #   gemini-2.0-flash*    → deprecated, shutdown Jun 1 2026
+    #   gemini-2.5-*         → stable GA, recommended
+    #
+    # model_aliases: if a user writes a deprecated name we forward to the
+    # nearest current equivalent so they get a working call + a debug log.
     gemini = LLMProvider(
         name=LLMProviderName.GEMINI,
         api_key=ProviderAPIKey.GEMINI,
-        models=[LLMModel.GEMINI_1_5_PRO, LLMModel.GEMINI_1_5_FLASH],
-        default_model=LLMModel.GEMINI_1_5_PRO
+        models=[
+            LLMModel.GEMINI_2_5_FLASH,
+            LLMModel.GEMINI_2_5_FLASH_LITE,
+            LLMModel.GEMINI_2_5_PRO,
+            LLMModel.GEMINI_2_0_FLASH,
+            LLMModel.GEMINI_2_0_FLASH_LITE,
+            # 1.5 excluded — shut down; enum values kept above for YAML compat
+        ],
+        default_model=LLMModel.GEMINI_2_5_FLASH,
+        model_aliases={
+            # Dead 1.5 models → nearest current equivalent
+            "gemini-1.5-pro":   "gemini-2.5-pro",
+            "gemini-1.5-flash":  "gemini-2.5-flash",
+        },
     )
-    
+
     @staticmethod
     def get_llm_provider(llm_provider_name: LLMProviderName) -> LLMProvider:
         """Get provider configuration by name."""
@@ -130,8 +209,8 @@ class LLMProviderConfig:
         elif llm_provider_name == LLMProviderName.GEMINI:
             return LLMProviderConfig.gemini
         else:
-            raise ValueError(f"Unsupported provider: {llm_provider_name}") 
-    
+            raise ValueError(f"Unsupported provider: {llm_provider_name}")
+
 
 if __name__ == "__main__":
     print(LLMProviderConfig.get_llm_provider(LLMProviderName.OPENAI))
