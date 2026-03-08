@@ -1,13 +1,16 @@
-# AgentShip Dockerfile
-# Multi-stage build for optimized production image
+# syntax=docker/dockerfile:1
+# AgentShip Dockerfile - uses BuildKit for faster builds (cache mounts)
+# Run with: DOCKER_BUILDKIT=1 docker compose build
 
 FROM python:3.13-slim as builder
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for building (including PostgreSQL dev libraries for psycopg2)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install system dependencies (apt cache mount speeds up repeated builds)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
@@ -15,15 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pipenv
-RUN pip install --no-cache-dir pipenv
+# Install pipenv (pip cache mount speeds up dependency installs)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install pipenv
 
-# Copy dependency files and pyproject.toml (needed for editable install)
+# Copy dependency files only (src not needed for install - keeps this layer cached on code changes)
 COPY Pipfile Pipfile.lock pyproject.toml ./
-COPY src ./src
 
-# Install dependencies
-RUN pipenv install --deploy --system
+# Install dependencies (pip cache mount - major speedup on repeated builds)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pipenv install --deploy --system
 
 # Production stage
 FROM python:3.13-slim
@@ -38,7 +42,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=7001
 
 # Install runtime dependencies (including Node.js for MCP STDIO servers)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
@@ -63,16 +69,15 @@ COPY --chown=app:app . .
 # This ensures branding assets are available even if .dockerignore affects it
 COPY --chown=app:app branding/ /app/branding/
 
-# Build Sphinx documentation (if source exists)
-# This ensures /docs endpoint serves the built documentation
-# Note: All Python packages (including sphinx) are already installed from builder stage
-RUN if [ -d "docs_sphinx/source" ]; then \
+# Build Sphinx documentation (if source exists and not skipped)
+# Skip in local dev: docs_sphinx/build is volume-mounted in docker-compose.yml
+# Set SKIP_DOCS_BUILD=false to enable (e.g. for production/Heroku builds)
+ARG SKIP_DOCS_BUILD=true
+RUN if [ "$SKIP_DOCS_BUILD" != "true" ] && [ -d "docs_sphinx/source" ]; then \
         cd docs_sphinx && \
         python -m sphinx -b html source build/html || echo "Warning: Sphinx build failed, /docs will show fallback page"; \
+        chown -R app:app /app/docs_sphinx/build; \
     fi
-
-# Ensure app user owns /app directory and can write to it
-RUN chown -R app:app /app && chmod -R u+w /app
 
 USER app
 

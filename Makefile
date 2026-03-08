@@ -52,7 +52,7 @@ docker-up: ## Start Docker containers (API, Swagger, Docs - everything at :7001)
 	@echo "   - Swagger: http://localhost:7001/swagger"
 	@echo "   - Docs: http://localhost:7001/docs (Sphinx docs built automatically)"
 	@echo "   - Studio: http://localhost:7001/studio"
-	@docker compose up -d --build || docker-compose up -d --build
+	@DOCKER_BUILDKIT=1 docker compose up -d --build || DOCKER_BUILDKIT=1 docker-compose up -d --build
 
 docker-down: ## Stop Docker containers
 	@echo "🛑 Stopping AgentShip containers..."
@@ -62,18 +62,21 @@ docker-restart: ## Restart Docker containers (keeps everything running)
 	@echo "🔄 Restarting AgentShip containers..."
 	@docker compose restart || docker-compose restart
 
-docker-reload: ## Hard reload (rebuilds image with docs, restarts everything)
-	@echo "🔄 Hard reloading AgentShip (rebuilding image + docs, restarting containers)..."
+docker-reload: ## Hard reload (rebuilds image, restarts everything)
+	@echo "🔄 Hard reloading AgentShip (rebuilding image, restarting containers)..."
 	@echo "📚 Everything will be available at http://localhost:7001 after restart"
 	@docker compose down || docker-compose down
-	@docker compose build --no-cache || docker-compose build --no-cache
+	@DOCKER_BUILDKIT=1 docker compose build || DOCKER_BUILDKIT=1 docker-compose build
 	@docker compose up -d || docker-compose up -d
 
 docker-logs: ## View Docker logs
 	@docker compose logs -f || docker-compose logs -f
 
 docker-build: ## Rebuild Docker images
-	@docker compose build --no-cache || docker-compose build --no-cache
+	@DOCKER_BUILDKIT=1 docker compose build || DOCKER_BUILDKIT=1 docker-compose build
+
+docker-build-clean: ## Rebuild Docker images from scratch (no cache)
+	@DOCKER_BUILDKIT=1 docker compose build --no-cache || DOCKER_BUILDKIT=1 docker-compose build --no-cache
 
 heroku-deploy: ## Deploy to Heroku (one command, includes PostgreSQL)
 	@echo "☁️  Deploying to Heroku..."

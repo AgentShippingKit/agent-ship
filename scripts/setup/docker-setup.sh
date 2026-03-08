@@ -95,11 +95,12 @@ if ! docker info &>/dev/null; then
 fi
 print_success "Docker daemon OK"
 
-# Build and start
+# Build and start (BuildKit enables cache mounts for faster rebuilds)
 echo ""
 print_header "🚀 Starting AgentShip"
 echo ""
 print_info "Building containers (first time may take a few minutes)..."
+export DOCKER_BUILDKIT=1
 $COMPOSE_CMD up --build -d
 
 # Wait for health check
