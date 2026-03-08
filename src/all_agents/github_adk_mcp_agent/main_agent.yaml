@@ -1,6 +1,6 @@
 agent_name: github_adk_mcp_agent
-llm_provider_name: openai
-llm_model: gpt-4o-mini
+llm_provider_name: gemini
+llm_model: gemini-2.5-flash
 temperature: 0.3
 execution_engine: adk  # Using ADK engine with GitHub MCP!
 streaming_mode: event_based
