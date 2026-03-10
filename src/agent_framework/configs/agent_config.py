@@ -62,6 +62,7 @@ class AgentConfig:
         memory: Optional[MemoryConfig] = None,
         streaming_mode: Union[StreamingMode, str] = StreamingMode.NONE,
         mcp_servers: Optional[List[Dict[str, Any]]] = None,
+        max_tool_rounds: int = 10,
     ):
         self.model_provider = LLMProviderConfig.get_llm_provider(llm_provider_name)
         self.model = llm_model
@@ -87,6 +88,7 @@ class AgentConfig:
         # Each entry is a dict describing how to construct a tool for this agent.
         # The BaseAgent class is responsible for interpreting this structure.
         self.tools: List[Dict[str, Any]] = tools or []
+        self.max_tool_rounds: int = max_tool_rounds
 
         # MCP server references: resolved from global registry with optional overrides.
         # Each entry is a full MCPServerConfig (registry base + agent overrides).
@@ -206,6 +208,7 @@ class AgentConfig:
             memory=memory_config,
             streaming_mode=config.get("streaming_mode", StreamingMode.NONE.value),
             mcp_servers=config.get("mcp_servers") or [],
+            max_tool_rounds=config.get("max_tool_rounds", 10),
         )
 
     def __str__(self):

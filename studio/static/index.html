@@ -1160,6 +1160,24 @@ function finalizeStreamingContainer(cid, content, events) {
     if (queue && queue.length > 0) { setTimeout(() => finalizeStreamingContainer(cid, content, events), 50); return; }
     const container = document.getElementById(cid);
     if (!container) return;
+
+    // Token-based streaming (e.g. LangGraph) sends one character at a time, so the
+    // per-token JSON unwrap in the content handler can't parse partial fragments.
+    // Once all tokens have arrived, the accumulated text may be a JSON-wrapped schema
+    // response (e.g. {"response": "..."}). Unwrap it now before final render.
+    const accumulated = rawContentMap.get(cid) || '';
+    if (accumulated.trimStart().startsWith('{')) {
+        try {
+            const p = JSON.parse(accumulated.trim());
+            if (typeof p === 'object' && p !== null) {
+                const unwrapped = p.response || p.text || p.answer || JSON.stringify(p, null, 2);
+                rawContentMap.set(cid, unwrapped);
+                content = unwrapped;
+                const contentEl = container.querySelector('.md-out');
+                if (contentEl) contentEl.innerHTML = marked.parse(unwrapped);
+            }
+        } catch {}
+    }
     // Hide streaming status indicators (thinking dots, tool progress) — they're in-progress only
     const evBox = document.getElementById(cid + '-events');
     if (evBox) evBox.style.display = 'none';

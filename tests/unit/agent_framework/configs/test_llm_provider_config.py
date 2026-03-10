@@ -99,6 +99,16 @@ class TestModelAliases:
         result = model_string("claude", "claude-sonnet-4")
         assert result == "anthropic/claude-sonnet-4-20250514"
 
+    # GPT-5 — released August 2025; no aliases needed, IDs are stable
+    def test_gpt5_no_alias_needed(self):
+        assert model_string("openai", "gpt-5") == "openai/gpt-5"
+
+    def test_gpt5_mini_no_alias_needed(self):
+        assert model_string("openai", "gpt-5-mini") == "openai/gpt-5-mini"
+
+    def test_gpt5_nano_no_alias_needed(self):
+        assert model_string("openai", "gpt-5-nano") == "openai/gpt-5-nano"
+
     def test_unknown_model_passthrough(self):
         # A model not in aliases should pass through unchanged (LiteLLM may know it)
         result = model_string("openai", "gpt-99-turbo")
@@ -164,6 +174,9 @@ class TestModelStringFormat:
     """Model strings must be in 'prefix/model-id' format for LiteLLM."""
 
     @pytest.mark.parametrize("provider_name,model_name,expected", [
+        ("openai", "gpt-5",            "openai/gpt-5"),
+        ("openai", "gpt-5-mini",       "openai/gpt-5-mini"),
+        ("openai", "gpt-5-nano",       "openai/gpt-5-nano"),
         ("openai", "gpt-4o",           "openai/gpt-4o"),
         ("openai", "gpt-4o-mini",      "openai/gpt-4o-mini"),
         ("openai", "o3",               "openai/o3"),

@@ -17,8 +17,6 @@ class PersonalAssistantInput(BaseModel):
 class PersonalAssistantOutput(BaseModel):
     """Output for answering questions and helping with tasks."""
     answer: str = Field(description="The answer to the question.")
-    session_id: str = Field(description="The session id to answer the question.")
-    user_id: str = Field(description="The user id to answer the question.")
 
 
 class PersonalAssistantAgent(BaseAgent):

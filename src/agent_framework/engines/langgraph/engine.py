@@ -26,7 +26,7 @@ from litellm.exceptions import RateLimitError
 from pydantic import BaseModel
 
 from src.agent_framework.configs.agent_config import AgentConfig, StreamingMode
-from src.agent_framework.core.io import build_schema_prompt
+from src.agent_framework.core.io import build_schema_prompt, extract_display_text
 from src.agent_framework.core.types import AgentType
 from src.agent_framework.engines.base import AgentEngine, EngineCapabilities
 from src.agent_framework.session.base import SessionStoreFactory
@@ -138,7 +138,7 @@ class LangGraphEngine(AgentEngine):
         self.agent_type = agent_type
 
         # Configuration
-        self._max_tool_rounds = getattr(agent_config, 'max_tool_rounds', DEFAULT_MAX_TOOL_ROUNDS)
+        self._max_tool_rounds = agent_config.max_tool_rounds
 
         # Observability - observer provides LangGraph and LiteLLM callbacks
         self.observer = ObservabilityFactory.create_observer(agent_config)
@@ -1017,7 +1017,7 @@ class LangGraphEngine(AgentEngine):
                 yield {
                     "type": "content",
                     "agent": agent_name,
-                    "text": final_output.model_dump_json(),
+                    "text": extract_display_text(self.output_schema, final_output.model_dump_json()),
                 }
             except Exception as e:
                 logger.error("Error in non-streaming run: %s", e, exc_info=True)

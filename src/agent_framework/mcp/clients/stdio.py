@@ -44,10 +44,14 @@ class StdioMCPClient(BaseMCPClient):
 
     def _server_params(self) -> StdioServerParameters:
         """Build MCP SDK stdio parameters from our config."""
+        import os
         cmd_list = self.config.command or []
         command = cmd_list[0] if cmd_list else ""
         args = cmd_list[1:] if len(cmd_list) > 1 else []
-        env = self.config.env or None
+        # Always merge with the current process environment so the subprocess
+        # inherits PATH, HOME, NODE_PATH, etc. Extra keys from config.env
+        # are overlaid on top, so they take precedence when set.
+        env = {**os.environ, **(self.config.env or {})}
         return StdioServerParameters(
             command=command,
             args=args,

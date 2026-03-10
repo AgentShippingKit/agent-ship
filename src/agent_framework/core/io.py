@@ -115,6 +115,34 @@ IMPORTANT: Return ONLY the JSON object with your actual data, not this example s
         return ""
 
 
+def extract_display_text(output_schema: Type[BaseModel], raw_text: str) -> str:
+    """Extract human-readable display text from raw LLM output, respecting the schema.
+
+    Both engines (ADK and LangGraph) may produce schema-formatted JSON as their
+    LLM output. This function ensures the SSE ``content`` event always carries
+    plain text — regardless of which engine produced the response.
+
+    Strategy:
+    - If the text is valid JSON that matches the output schema AND the schema has
+      exactly one string field, return that field's value directly.
+    - If the schema has multiple fields (intentional structured output), return
+      the JSON as-is so callers can still use it.
+    - If the text is not valid JSON (e.g. a streaming chunk mid-flight), return
+      it unchanged — safe fallback, never raises.
+    """
+    try:
+        data = json.loads(raw_text.strip())
+        instance = output_schema.model_validate(data)
+        field_values = list(instance.model_dump().values())
+        if len(field_values) == 1 and isinstance(field_values[0], str):
+            return field_values[0]
+        # Multi-field schema: JSON is the intentional representation
+        return raw_text
+    except (json.JSONDecodeError, ValueError):
+        # Not JSON or doesn't match schema — streaming chunk or plain text
+        return raw_text
+
+
 def parse_agent_response(output_schema: Type[BaseModel], result) -> BaseModel:
     """Parse agent response into an `output_schema` instance.
     
