@@ -33,8 +33,9 @@ class TestCreateArgsSchema:
         # Should create model with correct field
         assert "query" in schema_class.model_fields
         field = schema_class.model_fields["query"]
-        assert field.annotation == str
-        assert field.is_required()
+        # All fields are Optional — MCP server handles its own required-field checks
+        assert field.annotation == Optional[str]
+        assert not field.is_required()
         assert field.description == "The query string"
 
     def test_creates_schema_with_optional_field(self):
@@ -60,11 +61,11 @@ class TestCreateArgsSchema:
 
         schema_class = _create_args_schema(tool_info)
 
-        # Should create model with required and optional fields
+        # Should create model with both fields as Optional
         assert "limit" in schema_class.model_fields
         assert "name" in schema_class.model_fields
-        # name should be required, limit should be optional
-        assert schema_class.model_fields["name"].is_required()
+        # All fields are Optional — MCP server handles its own required-field checks
+        assert not schema_class.model_fields["name"].is_required()
         assert not schema_class.model_fields["limit"].is_required()
 
     def test_creates_schema_with_multiple_types(self):
@@ -88,13 +89,13 @@ class TestCreateArgsSchema:
 
         schema_class = _create_args_schema(tool_info)
 
-        # Should map all JSON Schema types to Python types
-        assert schema_class.model_fields["name"].annotation == str
-        assert schema_class.model_fields["count"].annotation == int
-        # ratio and enabled are optional, so wrapped in Optional
-        assert "enabled" in schema_class.model_fields
-        assert "tags" in schema_class.model_fields
-        assert "metadata" in schema_class.model_fields
+        # All fields are Optional — check the inner types are correct
+        assert schema_class.model_fields["name"].annotation == Optional[str]
+        assert schema_class.model_fields["count"].annotation == Optional[int]
+        assert schema_class.model_fields["ratio"].annotation == Optional[float]
+        assert schema_class.model_fields["enabled"].annotation == Optional[bool]
+        assert schema_class.model_fields["tags"].annotation == Optional[list]
+        assert schema_class.model_fields["metadata"].annotation == Optional[dict]
 
     def test_treats_all_as_required_when_no_required_list(self):
         """Test that all properties are required when 'required' array is missing."""
@@ -113,9 +114,9 @@ class TestCreateArgsSchema:
 
         schema_class = _create_args_schema(tool_info)
 
-        # Both should be required
-        assert schema_class.model_fields["param1"].is_required()
-        assert schema_class.model_fields["param2"].is_required()
+        # All fields are Optional regardless of 'required' list
+        assert not schema_class.model_fields["param1"].is_required()
+        assert not schema_class.model_fields["param2"].is_required()
 
     def test_creates_generic_schema_when_no_properties(self):
         """Test fallback to generic schema when no properties defined."""

@@ -54,9 +54,13 @@ def _mcp_input_schema_to_genai_parameters(input_schema: Dict[str, Any]) -> Optio
     if not props:
         return None
     properties = {k: _json_schema_property_to_genai(v) for k, v in props.items()}
-    required = input_schema.get("required", list(properties.keys()))
+    # Use only what the MCP schema declares as required — defaulting to all
+    # properties when the array is absent misleads the LLM into thinking every
+    # field is mandatory, which causes unnecessary failures on optional params.
+    required = input_schema.get("required", [])
     schema = types.Schema(type="OBJECT", properties=properties)
-    schema.required = required
+    if required:
+        schema.required = required
     return schema
 
 

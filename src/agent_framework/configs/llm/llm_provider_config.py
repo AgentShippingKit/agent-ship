@@ -3,8 +3,14 @@ from typing import List
 from enum import Enum
 from dotenv import load_dotenv
 import logging
+import litellm
 
 load_dotenv()
+
+# Newer models (e.g. GPT-5) reject params that older models accept (e.g. temperature).
+# drop_params=True tells LiteLLM to silently strip unsupported params per-model
+# rather than raising UnsupportedParamsError. Set once here — applies to all engines.
+litellm.drop_params = True
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +29,9 @@ class LLMProviderName(Enum):
 class LLMModel(Enum):
     """User-facing model names (used in agent YAML as llm_model)."""
     # OpenAI
+    GPT_5 = "gpt-5"
+    GPT_5_MINI = "gpt-5-mini"
+    GPT_5_NANO = "gpt-5-nano"
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"
     GPT_3_5_TURBO = "gpt-3.5-turbo"   # legacy, kept for backwards compat
@@ -134,6 +143,9 @@ class LLMProviderConfig:
         name=LLMProviderName.OPENAI,
         api_key=ProviderAPIKey.OPENAI,
         models=[
+            LLMModel.GPT_5,
+            LLMModel.GPT_5_MINI,
+            LLMModel.GPT_5_NANO,
             LLMModel.GPT_4_1,
             LLMModel.GPT_4_1_MINI,
             LLMModel.GPT_4O,

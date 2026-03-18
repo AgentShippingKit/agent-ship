@@ -14,39 +14,29 @@ logger = logging.getLogger(__name__)
 def _create_args_schema(tool_info: MCPToolInfo) -> Type[BaseModel]:
     """Create a Pydantic model from MCP tool's input schema for LangChain.
 
-    This ensures the LLM sees the correct parameter names and types,
-    making tool calls more accurate.
+    All fields are Optional — our wrapper's job is giving the LLM correct type
+    hints, not enforcing the MCP server's own input validation. LLMs legitimately
+    omit fields that have server-side defaults (e.g. Notion's sort/filter), and
+    a Pydantic required-field error would kill the call before it reaches the server.
     """
+    from pydantic import ConfigDict
+
     input_schema = tool_info.input_schema or {}
     properties = input_schema.get("properties", {})
-    required = set(input_schema.get("required", []))
-
-    # If no required list but has properties, treat all as required
-    # (MCP servers may not always specify required array)
-    if not required and properties:
-        required = set(properties.keys())
 
     if not properties:
-        # No schema defined - use generic args
-        return create_model(
-            f"{tool_info.name}_Args",
-            __config__={"extra": "allow"}
-        )
+        model = create_model(f"{tool_info.name}_Args")
+        model.model_config = ConfigDict(extra="allow")
+        return model
 
-    # Build field definitions from JSON Schema
     field_definitions: Dict[str, Any] = {}
 
     for prop_name, prop_schema in properties.items():
-        # Extract field info
         prop_type = prop_schema.get("type", "string")
         prop_desc = prop_schema.get("description", "")
-        is_required = prop_name in required
 
-        # Map JSON Schema types to Python types
-        python_type = str  # default
-        if prop_type == "string":
-            python_type = str
-        elif prop_type == "integer":
+        python_type: Any = str
+        if prop_type == "integer":
             python_type = int
         elif prop_type == "number":
             python_type = float
@@ -57,31 +47,22 @@ def _create_args_schema(tool_info: MCPToolInfo) -> Type[BaseModel]:
         elif prop_type == "object":
             python_type = dict
 
-        # Create field with proper type and requirement
-        if is_required:
-            field_definitions[prop_name] = (
-                python_type,
-                Field(..., description=prop_desc)
-            )
-        else:
-            field_definitions[prop_name] = (
-                Optional[python_type],
-                Field(None, description=prop_desc)
-            )
+        # Always Optional — the MCP server handles its own required-field checks.
+        # This prevents Pydantic from rejecting LLM calls that omit server-defaulted fields.
+        field_definitions[prop_name] = (
+            Optional[python_type],
+            Field(None, description=prop_desc)
+        )
 
-    # Create dynamic Pydantic model
     try:
-        return create_model(
-            f"{tool_info.name}_Args",
-            **field_definitions
-        )
+        model = create_model(f"{tool_info.name}_Args", **field_definitions)
+        model.model_config = ConfigDict(extra="allow")
+        return model
     except Exception as e:
-        logger.warning(f"Failed to create args schema for {tool_info.name}: {e}")
-        # Fallback to generic args
-        return create_model(
-            f"{tool_info.name}_Args",
-            __config__={"extra": "allow"}
-        )
+        logger.warning("Failed to create args schema for %s: %s", tool_info.name, e)
+        model = create_model(f"{tool_info.name}_Args")
+        model.model_config = ConfigDict(extra="allow")
+        return model
 
 
 def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig, agent_name: str = "") -> Any:
@@ -104,7 +85,10 @@ def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig, ag
         from src.agent_framework.mcp.client_manager import MCPClientManager
 
         client = MCPClientManager.get_instance().get_client(server_config, owner=agent_name)
-        result = await client.call_tool(name, arguments=kwargs if kwargs else {})
+        # Strip None values — optional fields not provided by the LLM should be
+        # omitted entirely so the MCP server applies its own defaults.
+        args = {k: v for k, v in kwargs.items() if v is not None}
+        result = await client.call_tool(name, arguments=args)
         if result is None:
             return ""
         if isinstance(result, (dict, list)):

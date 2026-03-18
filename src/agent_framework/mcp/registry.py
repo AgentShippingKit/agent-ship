@@ -196,29 +196,19 @@ class MCPServerRegistry:
         return normalized
 
     def _resolve_env_var_str(self, value: str) -> str:
-        """Resolve a single ${VAR} reference in a string value."""
-        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
-            env_var = value[2:-1]
-            return os.getenv(env_var, value)
-        return value
+        """Resolve all ${VAR} references within a string value."""
+        import re
+        if not isinstance(value, str):
+            return value
+        return re.sub(
+            r"\$\{([^}]+)\}",
+            lambda m: os.getenv(m.group(1), m.group(0)),
+            value,
+        )
 
     def _resolve_env_vars(self, env_dict: Dict[str, str]) -> Dict[str, str]:
-        """Resolve environment variable references like ${VAR} in env dict.
-
-        Args:
-            env_dict: Dictionary with potential ${VAR} references
-
-        Returns:
-            Dictionary with resolved values
-        """
-        resolved = {}
-        for key, value in env_dict.items():
-            if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
-                env_var = value[2:-1]  # Extract VAR from ${VAR}
-                resolved[key] = os.getenv(env_var, value)  # Use original if not found
-            else:
-                resolved[key] = value
-        return resolved
+        """Resolve all ${VAR} references in env dict values."""
+        return {key: self._resolve_env_var_str(value) for key, value in env_dict.items()}
 
     @classmethod
     def reset_instance(cls) -> None:

@@ -44,10 +44,14 @@ class StdioMCPClient(BaseMCPClient):
 
     def _server_params(self) -> StdioServerParameters:
         """Build MCP SDK stdio parameters from our config."""
+        import os
         cmd_list = self.config.command or []
         command = cmd_list[0] if cmd_list else ""
         args = cmd_list[1:] if len(cmd_list) > 1 else []
-        env = self.config.env or None
+        # Always merge with the current process environment so the subprocess
+        # inherits PATH, HOME, NODE_PATH, etc. Extra keys from config.env
+        # are overlaid on top, so they take precedence when set.
+        env = {**os.environ, **(self.config.env or {})}
         return StdioServerParameters(
             command=command,
             args=args,
@@ -137,13 +141,22 @@ class StdioMCPClient(BaseMCPClient):
                         msg = block.text
                         break
             raise RuntimeError(msg)
-        # Return structured content if available, else first text content
-        if result.structuredContent is not None:
-            return result.structuredContent
+        # Collect all text from content blocks (text, embedded resource, etc.)
+        # Prefer structuredContent only when there is no text content to surface
+        parts = []
         if result.content:
             for block in result.content:
                 if hasattr(block, "text") and block.text:
-                    return block.text
+                    parts.append(block.text)
+                elif hasattr(block, "resource") and block.resource:
+                    res = block.resource
+                    text = getattr(res, "text", None) or getattr(res, "blob", None)
+                    if text:
+                        parts.append(str(text))
+        if parts:
+            return "\n".join(parts)
+        if result.structuredContent is not None:
+            return result.structuredContent
         return None
 
     async def close(self) -> None:

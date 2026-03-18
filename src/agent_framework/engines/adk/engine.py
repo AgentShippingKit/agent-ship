@@ -17,7 +17,7 @@ from google.genai import types
 from pydantic import BaseModel
 
 from src.agent_framework.configs.agent_config import AgentConfig
-from src.agent_framework.core.io import parse_agent_response
+from src.agent_framework.core.io import extract_display_text, parse_agent_response
 from src.agent_framework.factories.observability_factory import ObservabilityFactory
 from src.agent_framework.core.types import AgentType
 from src.agent_framework.engines.base import AgentEngine, EngineCapabilities
@@ -276,9 +276,10 @@ class AdkEngine(AgentEngine):
             elif hasattr(part, "text"):
                 text_value = part.text if part.text else ""
                 if text_value:
-                    # Event-level (chunk) streaming only. ADK + LiteLLM does not
-                    # support true token-by-token streaming, so we forward the
-                    # chunks as-is and let the UI decide how to animate them.
-                    events.append({"type": "content", "agent": author, "text": text_value})
+                    # Extract plain display text, stripping any schema JSON wrapper
+                    # (e.g. ADK output_schema causes LLM to emit {"response": "..."}).
+                    # Falls back to raw text safely for partial streaming chunks.
+                    display_text = extract_display_text(self.output_schema, text_value)
+                    events.append({"type": "content", "agent": author, "text": display_text})
 
         return events
