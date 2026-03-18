@@ -25,10 +25,9 @@ def _create_args_schema(tool_info: MCPToolInfo) -> Type[BaseModel]:
     properties = input_schema.get("properties", {})
 
     if not properties:
-        return create_model(
-            f"{tool_info.name}_Args",
-            __config__=type("C", (), {"extra": "allow"})
-        )
+        model = create_model(f"{tool_info.name}_Args")
+        model.model_config = ConfigDict(extra="allow")
+        return model
 
     field_definitions: Dict[str, Any] = {}
 
@@ -61,10 +60,9 @@ def _create_args_schema(tool_info: MCPToolInfo) -> Type[BaseModel]:
         return model
     except Exception as e:
         logger.warning("Failed to create args schema for %s: %s", tool_info.name, e)
-        return create_model(
-            f"{tool_info.name}_Args",
-            __config__=type("C", (), {"extra": "allow"})
-        )
+        model = create_model(f"{tool_info.name}_Args")
+        model.model_config = ConfigDict(extra="allow")
+        return model
 
 
 def to_langgraph_tool(tool_info: MCPToolInfo, server_config: MCPServerConfig, agent_name: str = "") -> Any:
