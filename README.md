@@ -15,6 +15,7 @@
   <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Integrated-FF6B35?style=flat" alt="MCP"></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://discord.gg/zCEtKH2P"><img src="https://img.shields.io/badge/Discord-Community-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 ---
@@ -282,7 +283,7 @@ The most valuable contributions are new implementations of the four pluggable la
 - **New observability backends** – LangFuse, custom tracing integrations
 - **New MCP transports** – additional protocol implementations
 
-Check [`good first issue`](https://github.com/Agent-Ship/agent-ship/labels/good%20first%20issue), read [`CLAUDE.md`](CLAUDE.md) for the developer guide, then:
+Join our [Discord community](https://discord.gg/zCEtKH2P), check [`good first issue`](https://github.com/Agent-Ship/agent-ship/labels/good%20first%20issue), read [`CLAUDE.md`](CLAUDE.md) for the developer guide, then:
 
 ```bash
 make test && make lint
@@ -292,4 +293,4 @@ All PRs require passing integration tests.
 
 ---
 
-<p align="center">MIT License · Built by <a href="https://github.com/Agent-Ship/agent-ship">AgentShip</a> · Open source, no vendor allegiance</p>
+<p align="center">MIT License · Built by <a href="https://github.com/Agent-Ship/agent-ship">AgentShip</a> · <a href="https://discord.gg/zCEtKH2P">Discord</a> · Open source, no vendor allegiance</p>

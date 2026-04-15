@@ -18,9 +18,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pipenv (pip cache mount speeds up dependency installs)
+# Pin pipenv: Pipfile.lock _meta.hash must match the pipenv version used for `pipenv lock` (see local `pipenv --version`).
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install pipenv
+    pip install "pipenv==2023.12.1"
 
 # Copy dependency files only (src not needed for install - keeps this layer cached on code changes)
 COPY Pipfile Pipfile.lock pyproject.toml ./
